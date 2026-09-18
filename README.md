@@ -1,9 +1,8 @@
 <div align="center">
-
-# ❄ MC88
 **🌍 This README is in English and French — scroll down for French ↓**
 **🇫🇷 Ce README est en anglais et en français — faites défiler pour le français ↓**
-**ثلاث محاولات لنفس الفكرة. لم تنجح أي منها. وكلها هنا.**
+# ❄ MC88
+
 
 </div>
 
