@@ -1,6 +1,8 @@
 <div align="center">
 
 # ❄ MC88
+> 🌍 **English · Français** — *Scroll down for the French version ↓*
+> 🇫🇷 **Français disponible en bas de page** — *faites défiler vers le bas ↓*
 
 **ثلاث محاولات لنفس الفكرة. لم تنجح أي منها. وكلها هنا.**
 
