@@ -1,0 +1,3178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>MC88_OS</title>
+<style>
+:root{--bg:#08090a;--surface:#131518;--card:#1a1d22;--fg:#f2f5f7;--muted:#7d868c;--accent:#34e58a;--border:rgba(255,255,255,.08);--danger:#ff4d5e;--warn:#ffb347;--info:#4d8cff;}
+.theme-green{--bg:#08090a;--surface:#131518;--card:#1a1d22;--fg:#f2f5f7;--muted:#7d868c;--accent:#34e58a;--border:rgba(255,255,255,.08);}
+.theme-red{--bg:#0c0708;--surface:#171013;--card:#1f1518;--fg:#f7eeee;--muted:#a58a8e;--accent:#ff4d5e;--border:rgba(255,255,255,.08);}
+.theme-white{--bg:#f7f8fa;--surface:#ffffff;--card:#e8eaee;--fg:#0d1117;--muted:#6b7280;--accent:#0d1117;--border:rgba(0,0,0,.08);}
+.theme-black{--bg:#000000;--surface:#0d0d0d;--card:#161616;--fg:#f5f5f5;--muted:#787878;--accent:#ffffff;--border:rgba(255,255,255,.1);}
+.font-default{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,Roboto,sans-serif;}
+.font-serif{font-family:Georgia,"Times New Roman",serif;}
+.font-mono{font-family:ui-monospace,Menlo,Consolas,monospace;}
+.font-rounded{font-family:"SF Pro Rounded","Nunito","Quicksand",system-ui,sans-serif;}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;font-family:inherit;}
+html,body{height:100%;width:100%;overflow:hidden;background:#000;position:fixed;color:#fff;}
+
+.device{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;overflow:hidden;z-index:1000;}
+.device.desktop{top:50%;left:50%;width:390px;height:844px;transform:translate(-50%,-50%);border-radius:56px;padding:11px;background:linear-gradient(160deg,#222428,#0a0b0d);box-shadow:0 0 0 2px #1a1a1a,0 0 0 3px #333,0 50px 100px -30px rgba(0,0,0,.9);}
+.device.desktop .screen{border-radius:46px;}
+.device.desktop .screen::after{content:'';position:absolute;top:14px;left:50%;transform:translateX(-50%);width:130px;height:32px;background:#000;border-radius:18px;z-index:900;pointer-events:none;}
+.device.desktop .side{display:block;}
+
+.screen{position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);isolation:isolate;touch-action:none;transition:background .4s;}
+.side{display:none;position:absolute;background:#1d1d1f;border-radius:3px;cursor:pointer;z-index:1001;}
+.side.pw{right:-3px;top:200px;width:4px;height:96px;}
+.side.vu{left:-3px;top:160px;width:4px;height:48px;}
+.side.vd{left:-3px;top:216px;width:4px;height:48px;}
+
+/* STATUS */
+.status{position:absolute;top:0;left:0;right:0;height:34px;padding:8px 18px 0;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;z-index:500;pointer-events:none;color:var(--fg);}
+.status .right{display:flex;gap:6px;align-items:center;}
+.status .sico{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.status .rec-dot{width:8px;height:8px;border-radius:50%;background:#ff4d5e;animation:pulse 1.2s infinite;}
+@keyframes pulse{50%{opacity:.3;}}
+.status .bat{width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative;opacity:.9;display:flex;align-items:center;}
+.status .bat::after{content:'';position:absolute;right:-3px;top:3px;width:2px;height:5px;background:currentColor;border-radius:0 1px 1px 0;}
+.status .bat i{display:block;height:100%;background:currentColor;border-radius:1px;}
+.status .bat i.low{background:#ff4d5e;}
+.status .bat-num{font-size:11px;font-weight:600;}
+.status .bat-num.inside{display:none;}
+.status .bat-num.hidden{display:none;}
+.status .bat.hidden{display:none;}
+.offline-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:8px;background:rgba(255,77,94,.15);border:1px solid rgba(255,77,94,.3);color:#ff8a95;font-size:9px;font-weight:700;letter-spacing:.05em;}
+.offline-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:#ff4d5e;}
+
+/* LAYERS */
+.layer{position:absolute;inset:0;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility .3s;display:flex;flex-direction:column;}
+.layer.active{opacity:1;pointer-events:auto;visibility:visible;}
+
+/* BOOT — with real lines */
+#boot{background:#000;align-items:center;justify-content:center;z-index:800;}
+.boot-logo{position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;margin-bottom:30px;}
+.boot-logo svg{position:absolute;inset:0;width:100%;height:100%;}
+.boot-ring-base{fill:none;stroke:rgba(52,229,138,.1);stroke-width:1.5;}
+.boot-ring-draw{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-dasharray:408;stroke-dashoffset:408;animation:drawRing 1.3s ease-out .1s forwards;}
+@keyframes drawRing{to{stroke-dashoffset:0;}}
+.boot-mark{font-size:48px;font-weight:200;letter-spacing:-2px;color:#fff;opacity:0;animation:markPop .5s ease .7s forwards;}
+@keyframes markPop{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
+.boot-name{font-size:11px;font-weight:500;letter-spacing:.7em;color:rgba(255,255,255,.4);text-transform:uppercase;opacity:0;animation:fadeIn .5s ease 1.2s forwards;padding-left:.7em;}
+@keyframes fadeIn{to{opacity:1;}}
+.boot-lines{position:absolute;bottom:60px;left:30px;right:30px;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:rgba(52,229,138,.6);line-height:1.8;text-align:left;max-height:40vh;overflow:hidden;}
+.boot-lines div{opacity:0;animation:fadeIn .3s ease forwards;}
+.boot-lines .ok{color:var(--accent);}
+.boot-lines .wait{color:var(--warn);}
+
+/* SETUP */
+#setup{background:var(--bg);z-index:820;padding:60px 24px 30px;justify-content:flex-start;}
+.setup-title{font-size:26px;font-weight:700;margin-bottom:8px;}
+.setup-sub{font-size:13px;color:var(--muted);margin-bottom:32px;line-height:1.5;}
+.setup-progress{display:flex;gap:6px;margin-bottom:30px;}
+.setup-progress i{flex:1;height:3px;border-radius:3px;background:var(--surface);}
+.setup-progress i.on{background:var(--accent);}
+.setup-body{flex:1;overflow-y:auto;}
+.setup-next{width:100%;padding:16px;border-radius:16px;border:none;background:var(--accent);color:var(--bg);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;}
+.setup-next:disabled{opacity:.4;}
+.setup-opt{display:flex;align-items:center;gap:14px;padding:15px 16px;background:var(--surface);border:2px solid var(--border);border-radius:14px;margin-bottom:8px;cursor:pointer;}
+.setup-opt.on{border-color:var(--accent);}
+.setup-opt .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.setup-opt.on .dot{border-color:var(--accent);background:var(--accent);}
+.setup-opt.on .dot::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--bg);}
+.setup-opt .lbl{font-size:14px;font-weight:500;}
+.setup-opt .desc{font-size:11.5px;color:var(--muted);margin-top:3px;}
+
+/* LOCK */
+#lock{z-index:400;background-size:cover;background-position:center;align-items:center;padding-top:56px;padding-bottom:30px;transition:opacity .25s;}
+.lock-time{font-size:80px;font-weight:200;letter-spacing:-4px;line-height:1;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 4px 30px rgba(0,0,0,.4);margin-top:20px;}
+.lock-date{font-size:15px;font-weight:500;color:rgba(255,255,255,.75);margin-top:8px;}
+.lock-bat{margin-top:22px;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:600;color:#fff;}
+.lock-bat .bw{width:24px;height:12px;border:1.5px solid #fff;border-radius:3px;position:relative;opacity:.95;}
+.lock-bat .bw::after{content:'';position:absolute;right:-3px;top:3.5px;width:2px;height:5px;background:#fff;border-radius:0 1px 1px 0;}
+.lock-bat .bw i{display:block;height:100%;background:var(--accent);border-radius:1px;transition:width .4s;}
+.lock-notifs{position:absolute;top:200px;left:20px;right:20px;display:flex;flex-direction:column;gap:8px;max-height:200px;overflow:hidden;}
+.lock-notif{padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);font-size:12px;color:#fff;}
+.lock-notif b{display:block;font-size:12.5px;margin-bottom:3px;}
+.lock-mid{flex:1;}
+.lock-bottom{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:20px;width:100%;}
+.lock-quick{display:flex;gap:80px;margin-bottom:14px;}
+.lock-q{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;touch-action:manipulation;}
+.lock-q:active{transform:scale(.9);background:rgba(255,255,255,.25);}
+.lock-q svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.lock-tap{margin-top:6px;padding:14px 40px;border-radius:30px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.12em;transition:transform .12s,background .15s;touch-action:manipulation;position:relative;z-index:5;}
+.lock-tap:active{transform:scale(.95);background:rgba(255,255,255,.24);}
+
+/* PIN */
+.pin-wrap{position:absolute;top:0;left:0;right:0;bottom:0;z-index:450;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding-top:18px;transform:translateY(100%);opacity:0;visibility:hidden;transition:transform .4s cubic-bezier(.32,.9,.35,1),opacity .3s,visibility .3s;}
+.pin-wrap.open{transform:translateY(0);opacity:1;visibility:visible;}
+.pin-head{width:100%;max-width:340px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:40px;}
+.pin-cancel{width:38px;height:38px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--fg);cursor:pointer;}
+.pin-title{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-weight:600;}
+.pin-sp{width:38px;}
+.pin-greet{font-size:22px;font-weight:600;margin-bottom:6px;}
+.pin-sub{font-size:12px;color:var(--muted);margin-bottom:36px;}
+.pin-dots{display:flex;gap:18px;margin-bottom:44px;height:16px;}
+.pin-dots i{width:14px;height:14px;border-radius:50%;border:1.8px solid var(--muted);transition:all .2s;display:block;}
+.pin-dots i.filled{background:var(--accent);border-color:var(--accent);transform:scale(1.15);}
+.pin-dots.shake{animation:shake .4s;}
+@keyframes shake{10%,90%{transform:translateX(-2px);}20%,80%{transform:translateX(4px);}30%,50%,70%{transform:translateX(-8px);}40%,60%{transform:translateX(8px);}}
+.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:18px;}
+.keypad button{width:72px;height:72px;border-radius:50%;border:none;background:var(--surface);color:var(--fg);font-size:24px;font-weight:300;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;}
+.keypad button:active{transform:scale(.88);background:var(--card);}
+.keypad button.ghost{background:transparent;color:var(--accent);font-size:13px;font-weight:600;}
+.pin-forgot{margin-top:26px;font-size:13px;color:var(--accent);font-weight:500;cursor:pointer;}
+
+/* HOME */
+#home{z-index:100;background-size:cover;background-position:center;padding-top:34px;padding-bottom:0;}
+.home-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 14px 4px;}
+.home-search{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:16px;background:rgba(20,22,26,.6);border:1px solid rgba(255,255,255,.08);margin-bottom:14px;cursor:pointer;}
+.home-search svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.6;}
+.home-search span{font-size:13px;opacity:.6;}
+
+.widgets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.widget{padding:14px;border-radius:18px;background:rgba(20,22,26,.55);border:1px solid rgba(255,255,255,.08);min-height:90px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;}
+.widget.wide{grid-column:span 2;}
+.widget .wtop{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.6);letter-spacing:.08em;text-transform:uppercase;font-weight:600;}
+.widget .wval{font-size:26px;font-weight:300;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+.widget .wsub{font-size:10.5px;color:rgba(255,255,255,.55);margin-top:2px;}
+.w-bat .wval{display:flex;align-items:baseline;gap:2px;}
+.w-bat .pct{font-size:14px;opacity:.6;}
+.w-music-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.w-music-artist{font-size:10.5px;color:rgba(255,255,255,.55);margin-top:2px;}
+.w-prog{height:2px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:8px;overflow:hidden;}
+.w-prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s;}
+
+.apps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 8px;padding-bottom:80px;}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;position:relative;}
+.app .ic{width:54px;height:54px;display:flex;align-items:center;justify-content:center;background:rgba(20,22,26,.7);border:1px solid rgba(255,255,255,.1);box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .12s;border-radius:17px;overflow:hidden;position:relative;}
+.shape-circle .app .ic{border-radius:50%;}
+.shape-square .app .ic{border-radius:8px;}
+.shape-squircle .app .ic{border-radius:17px;}
+.app:active .ic{transform:scale(.88);}
+.app .ic svg{width:26px;height:26px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.app .lb{font-size:10px;font-weight:500;color:#fff;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.7);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.app.folder .ic{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:6px;background:rgba(20,22,26,.7);}
+.app.folder .mini{width:100%;height:100%;border-radius:4px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);}
+.app.folder .mini svg{width:12px;height:12px;}
+.app .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,.3);}
+
+.taskbar{position:absolute;bottom:6px;left:8px;right:8px;height:52px;padding:0 6px;z-index:60;display:flex;align-items:center;gap:6px;background:rgba(20,22,26,.82);border:1px solid rgba(255,255,255,.1);border-radius:22px;box-shadow:0 12px 30px rgba(0,0,0,.5);}
+.tb-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .1s,background .15s;}
+.tb-btn:active{transform:scale(.88);background:rgba(255,255,255,.1);}
+.tb-btn svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+.tb-apps{flex:1;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;height:38px;align-items:center;padding:0 4px;scrollbar-width:none;}
+.tb-apps::-webkit-scrollbar{display:none;}
+.tb-app{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);cursor:pointer;position:relative;transition:transform .1s;}
+.tb-app:active{transform:scale(.9);}
+.tb-app.active{background:rgba(52,229,138,.15);border-color:rgba(52,229,138,.4);}
+.tb-app.active::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);}
+.tb-app svg{width:16px;height:16px;stroke:var(--fg);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.9;}
+.tb-empty{font-size:10px;color:rgba(255,255,255,.35);padding:0 8px;letter-spacing:.05em;text-transform:uppercase;}
+
+/* SEARCH */
+#search{position:absolute;inset:0;z-index:640;background:rgba(8,9,10,.96);transform:translateY(-100%);transition:transform .3s cubic-bezier(.32,.9,.35,1);padding:56px 20px 20px;display:flex;flex-direction:column;}
+#search.open{transform:translateY(0);}
+.search-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);margin-bottom:16px;}
+.search-bar svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.6;}
+.search-bar input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:15px;font-family:inherit;}
+.search-bar .clr{padding:4px 8px;color:var(--muted);font-size:14px;cursor:pointer;}
+.search-results{flex:1;overflow-y:auto;}
+.search-res{display:flex;align-items:center;gap:14px;padding:12px 8px;border-radius:12px;cursor:pointer;}
+.search-res:active{background:var(--surface);}
+.search-res .si{width:40px;height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.search-res .si svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.search-res .sn{font-size:14px;font-weight:500;}
+.search-res .sd{font-size:11px;color:var(--muted);margin-top:2px;}
+.search-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+
+/* APP DRAWER */
+#drawer{position:absolute;inset:0;z-index:630;background:rgba(8,9,10,.97);transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.9,.35,1);padding:56px 20px 30px;display:flex;flex-direction:column;}
+#drawer.open{transform:translateY(0);}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.drawer-title{font-size:20px;font-weight:700;}
+.drawer-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;}
+.drawer-search{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:16px;}
+.drawer-search svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;opacity:.6;}
+.drawer-search input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:13px;}
+.drawer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 8px;overflow-y:auto;flex:1;padding-bottom:20px;}
+
+/* APP VIEW */
+#app{z-index:200;background:var(--bg);transform:scale(.95);opacity:0;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .2s;}
+#app.active{transform:scale(1);opacity:1;}
+.app-head{padding:42px 18px 12px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.app-back{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.app-back:active{transform:scale(.88);}
+.app-back svg{width:18px;height:18px;stroke:var(--fg);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.app-head .ttl{font-size:17px;font-weight:600;flex:1;}
+.app-head .actions{display:flex;gap:6px;}
+.app-head .actions svg{width:20px;height:20px;stroke:var(--fg);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.7;}
+.app-body{flex:1;overflow-y:auto;padding:20px 20px 80px;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+.app-body::-webkit-scrollbar{width:0;}
+
+/* QUICK PANEL */
+#qp{position:absolute;inset:0;z-index:600;background:rgba(10,12,14,.97);transform:translateY(-100%);transition:transform .35s cubic-bezier(.32,.9,.35,1);padding:56px 16px 20px;overflow-y:auto;}
+#qp.open{transform:translateY(0);}
+.qp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.qp-title{font-size:13px;font-weight:600;opacity:.9;}
+.qp-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;}
+.qp-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;background:rgba(255,255,255,.05);padding:6px;border-radius:16px;}
+.qp-mode{padding:10px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:11.5px;font-weight:600;}
+.qp-mode.on{background:var(--accent);color:#04140b;}
+.qp-mode svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.qp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.qp-btn{aspect-ratio:1;border-radius:18px;background:rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border:1px solid rgba(255,255,255,.06);}
+.qp-btn:active{background:rgba(255,255,255,.18);}
+.qp-btn.on{background:var(--accent);color:#04140b;border-color:transparent;}
+.qp-btn.on svg{stroke:#04140b;}
+.qp-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s;}
+.qp-btn span{font-size:9px;font-weight:500;}
+.qp-sliders{background:rgba(255,255,255,.05);border-radius:18px;padding:14px 16px;margin-bottom:14px;}
+.qp-srow{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.qp-srow:last-child{margin-bottom:0;}
+.qp-srow svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.qp-srow .lbl{font-size:10.5px;font-weight:600;width:52px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;}
+.qp-srow input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:3px;background:rgba(255,255,255,.15);outline:none;}
+.qp-srow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;}
+.qp-notif-title{font-size:10px;letter-spacing:.15em;text-transform:uppercase;opacity:.5;margin:14px 0 6px;padding-left:4px;display:flex;justify-content:space-between;align-items:center;}
+.qp-notif-title .clear-btn{font-size:9px;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--accent);cursor:pointer;letter-spacing:0;text-transform:none;font-weight:600;}
+.qp-notif{background:rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.05);display:flex;gap:10px;align-items:flex-start;cursor:pointer;position:relative;}
+.qp-notif:active{background:rgba(255,255,255,.12);}
+.qp-notif .ni{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.qp-notif .ni svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:1.9;}
+.qp-notif .nc{flex:1;min-width:0;}
+.qp-notif .t1{font-size:12px;font-weight:600;margin-bottom:2px;}
+.qp-notif .t2{font-size:11px;opacity:.7;line-height:1.4;}
+.qp-notif .nt{font-size:9.5px;opacity:.5;margin-top:3px;}
+
+/* RECENTS */
+#recents{position:absolute;inset:0;z-index:620;background:rgba(8,9,10,.94);transform:scale(.95);opacity:0;pointer-events:none;transition:transform .25s,opacity .2s;padding:56px 20px 80px;display:flex;flex-direction:column;}
+#recents.open{transform:scale(1);opacity:1;pointer-events:auto;}
+.recents-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.recents-head .title{font-size:20px;font-weight:700;}
+.recents-head .clear-all{font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;padding:6px 10px;border-radius:10px;background:rgba(52,229,138,.1);}
+.recents-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;overflow-y:auto;flex:1;}
+.recent-card{aspect-ratio:1/1.3;border-radius:18px;background:var(--card);border:1px solid var(--border);padding:14px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;position:relative;overflow:hidden;}
+.recent-card:active{transform:scale(.97);}
+.recent-card .rc-head{display:flex;align-items:center;gap:8px;}
+.recent-card .rc-ico{width:26px;height:26px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;}
+.recent-card .rc-ico svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.recent-card .rc-name{font-size:12px;font-weight:600;}
+.recent-card .rc-prev{position:absolute;inset:50px 10px 10px 10px;background:var(--surface);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);}
+.recent-card .rc-close{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:pointer;}
+.recents-empty{text-align:center;padding:60px;color:var(--muted);font-size:13px;flex:1;display:flex;align-items:center;justify-content:center;}
+
+/* SETTINGS */
+.set-group{margin-bottom:22px;}
+.set-group h4{font-size:10.5px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-left:6px;font-weight:600;}
+.set-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:6px;cursor:pointer;font-size:14px;transition:background .15s;}
+.set-item:active{background:var(--card);}
+.set-item .left{display:flex;align-items:center;gap:12px;}
+.set-item .icn{width:30px;height:30px;border-radius:9px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.set-item .icn svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.set-item .val{color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px;}
+.set-item .arrow{color:var(--muted);font-size:14px;opacity:.5;}
+.set-item.danger{color:var(--danger);}
+.set-item.danger .icn svg{stroke:var(--danger);}
+.switch{width:42px;height:24px;border-radius:12px;background:rgba(128,128,128,.3);position:relative;flex-shrink:0;transition:background .2s;}
+.switch.on{background:var(--accent);}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;}
+.switch.on::after{left:20px;}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.chip{padding:8px 14px;border-radius:20px;background:var(--surface);border:1.5px solid var(--border);font-size:12.5px;cursor:pointer;font-weight:500;}
+.chip.on{background:var(--accent);color:var(--bg);border-color:transparent;}
+
+.meter{margin-bottom:18px;}
+.meter .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;}
+.meter .top .lb{color:var(--fg);font-weight:500;}
+.meter .top .vl{color:var(--muted);font-variant-numeric:tabular-nums;}
+.meter .bar{height:8px;background:rgba(128,128,128,.18);border-radius:5px;overflow:hidden;}
+.meter .bar i{display:block;height:100%;border-radius:5px;transition:width .6s;}
+.meter .bar i.green{background:linear-gradient(90deg,#34e58a,#7cf0b8);}
+.meter .bar i.blue{background:linear-gradient(90deg,#4d8cff,#7cb1ff);}
+.meter .bar i.orange{background:linear-gradient(90deg,#ff9940,#ffbe7c);}
+.meter .bar i.red{background:linear-gradient(90deg,#ff4d5e,#ff8a95);}
+.opt-btn{width:100%;padding:15px;border-radius:14px;border:none;background:var(--accent);color:var(--bg);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;}
+.bat-hero{text-align:center;padding:20px 0 24px;}
+.bat-hero .big{font-size:62px;font-weight:200;letter-spacing:-2px;font-variant-numeric:tabular-nums;line-height:1;}
+.bat-hero .pct{font-size:20px;opacity:.6;margin-left:2px;}
+.bat-hero .stat{font-size:13px;color:var(--muted);margin-top:8px;}
+.bat-chart{height:80px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px 6px;margin-bottom:16px;display:flex;align-items:flex-end;gap:3px;}
+.bat-chart i{flex:1;background:linear-gradient(180deg,var(--accent),rgba(52,229,138,.3));border-radius:3px;transition:height .4s;}
+.kb-prev{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;line-height:1.7;margin-bottom:14px;}
+
+/* MODAL */
+.modal-bg{position:absolute;inset:0;z-index:850;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:30px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-bg.on{opacity:1;pointer-events:auto;}
+.modal{width:100%;max-width:320px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;color:var(--fg);max-height:80vh;overflow-y:auto;}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:10px;}
+.modal p{font-size:12px;line-height:1.6;color:var(--muted);margin-bottom:16px;}
+.modal .cd{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:1.5px;background:var(--surface);padding:12px;border-radius:10px;text-align:center;color:var(--accent);font-weight:600;margin-bottom:16px;}
+.modal-btn{width:100%;padding:13px;border-radius:12px;border:none;font-size:13px;font-weight:600;margin-top:8px;cursor:pointer;font-family:inherit;}
+.modal-btn.primary{background:var(--accent);color:var(--bg);}
+.modal-btn.danger{background:rgba(255,77,94,.15);color:var(--danger);}
+.modal-btn.ghost{background:var(--surface);color:var(--muted);}
+.modal-btn.warn{background:rgba(255,179,71,.15);color:var(--warn);}
+
+/* PERMISSIONS */
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;}
+.perm-row .pl{display:flex;align-items:center;gap:12px;}
+.perm-row .pi{width:34px;height:34px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.perm-row .pi svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.9;}
+.perm-row .pn{font-size:13.5px;font-weight:500;}
+.perm-row .pd{font-size:10.5px;color:var(--muted);margin-top:3px;}
+.perm-row .pv{padding:6px 12px;border-radius:10px;background:var(--card);font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;}
+.perm-row .pv.granted{color:var(--accent);background:rgba(52,229,138,.1);}
+.perm-row .pv.denied{color:var(--danger);background:rgba(255,77,94,.1);}
+
+/* KEYBOARD */
+#kb{position:absolute;left:0;right:0;bottom:0;z-index:1000;background:rgba(20,22,25,.98);border-top:1px solid rgba(255,255,255,.08);padding:8px 4px 10px;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,.9,.35,1);user-select:none;}
+#kb.open{transform:translateY(0);}
+.kb-row{display:flex;gap:5px;justify-content:center;margin-bottom:6px;padding:0 3px;}
+.kb-key{flex:1;min-width:0;height:42px;border-radius:6px;background:rgba(255,255,255,.1);color:#fff;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0;transition:background .08s;touch-action:manipulation;}
+.kb-key:active{background:rgba(255,255,255,.25);}
+.kb-key.wide{flex:1.5;font-size:12px;font-weight:600;}
+.kb-key.space{flex:5;font-size:11px;color:rgba(255,255,255,.7);letter-spacing:.05em;}
+.kb-key.shift{flex:1.3;}
+.kb-key.on{background:var(--accent);color:var(--bg);}
+.kb-num-row{display:flex;gap:5px;justify-content:center;margin-bottom:6px;padding:0 3px;}
+.kb-num{flex:1;height:36px;border-radius:6px;background:rgba(255,255,255,.06);color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit;}
+
+/* SHARE SHEET */
+.share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.share-app{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+.share-app .si{width:52px;height:52px;border-radius:16px;background:var(--surface);display:flex;align-items:center;justify-content:center;}
+.share-app .si svg{width:26px;height:26px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.share-app .sl{font-size:10px;color:var(--muted);}
+
+/* CRASH */
+.crash-icon{width:60px;height:60px;border-radius:50%;background:rgba(255,77,94,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.crash-icon svg{width:30px;height:30px;stroke:var(--danger);fill:none;stroke-width:2;}
+.crash-stack{background:var(--surface);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--muted);line-height:1.55;max-height:120px;overflow-y:auto;margin-bottom:16px;white-space:pre-wrap;}
+
+/* LONG PRESS */
+#lpMenu{position:absolute;inset:0;z-index:870;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:30px;opacity:0;pointer-events:none;transition:opacity .2s;}
+#lpMenu.on{opacity:1;pointer-events:auto;}
+.lp-sheet{width:100%;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:22px;padding:20px;margin-bottom:20px;}
+.lp-title{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.lp-title .li{width:44px;height:44px;border-radius:14px;background:var(--surface);display:flex;align-items:center;justify-content:center;}
+.lp-title .li svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.lp-title .ln{font-size:15px;font-weight:600;}
+.lp-title .ls{font-size:11px;color:var(--muted);margin-top:2px;}
+.lp-action{display:flex;align-items:center;gap:14px;padding:12px 4px;cursor:pointer;font-size:14px;border-radius:8px;}
+.lp-action:active{background:var(--surface);}
+.lp-action svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.7;}
+.lp-action.danger{color:var(--danger);}
+
+/* ALARM RING */
+#alarmRing{position:absolute;inset:0;z-index:880;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.95));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:opacity .3s;}
+#alarmRing.on{opacity:1;pointer-events:auto;}
+.al-bell{width:100px;height:100px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;animation:bellRing .8s ease-in-out infinite;box-shadow:0 0 60px rgba(52,229,138,.6);}
+@keyframes bellRing{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
+.al-bell svg{width:44px;height:44px;stroke:var(--bg);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.al-time{font-size:64px;font-weight:200;letter-spacing:-3px;font-variant-numeric:tabular-nums;}
+.al-label{font-size:15px;color:rgba(255,255,255,.7);}
+.al-actions{display:flex;gap:20px;margin-top:20px;}
+.al-btn{padding:16px 34px;border-radius:30px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.al-btn.snooze{background:rgba(255,255,255,.15);color:#fff;}
+.al-btn.stop{background:var(--accent);color:var(--bg);}
+
+/* POWER MENU */
+#pm{position:absolute;inset:0;z-index:700;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;opacity:0;pointer-events:none;transition:opacity .25s;}
+#pm.on{opacity:1;pointer-events:auto;}
+.pm-btn{width:100%;max-width:280px;padding:17px;border-radius:16px;background:rgba(255,255,255,.1);color:#fff;font-size:15px;font-weight:500;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;}
+.pm-btn:active{background:rgba(255,255,255,.22);}
+.pm-btn.danger{background:rgba(255,77,94,.2);}
+.pm-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+
+/* SHUT ANIM */
+#shutAnim{position:absolute;inset:0;z-index:900;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .5s;color:#fff;}
+#shutAnim.on{opacity:1;pointer-events:auto;}
+#shutAnim .spin{width:60px;height:60px;border-radius:50%;border:2px solid rgba(52,229,138,.2);border-top-color:var(--accent);animation:spin 1s linear infinite;margin-bottom:24px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#shutAnim .txt{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.5);}
+
+/* OFF */
+#off{position:absolute;inset:0;background:#000;z-index:750;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;}
+#off.on{opacity:1;pointer-events:auto;display:flex;}
+.off-batt{display:flex;flex-direction:column;align-items:center;gap:22px;opacity:0;transition:opacity .4s;}
+#off.charging .off-batt{opacity:1;}
+.off-batt .shell{width:72px;height:132px;border:3px solid rgba(52,229,138,.3);border-radius:14px;position:relative;padding:5px;display:flex;align-items:flex-end;}
+.off-batt .shell::before{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:26px;height:5px;background:rgba(52,229,138,.3);border-radius:3px 3px 0 0;}
+.off-batt .shell i{display:block;width:100%;border-radius:8px;background:linear-gradient(0deg,#34e58a,#7cf0b8);transition:height .8s;box-shadow:0 0 20px rgba(52,229,138,.5);}
+.off-batt .pct{font-size:40px;font-weight:200;color:#fff;font-variant-numeric:tabular-nums;}
+.off-batt .lbl{font-size:11px;letter-spacing:.3em;color:#5a6660;text-transform:uppercase;font-weight:600;}
+.off-tap{position:absolute;bottom:60px;font-size:10.5px;color:#444;letter-spacing:.2em;text-transform:uppercase;}
+
+/* CHARGING BANNER */
+#charging-banner{position:absolute;top:56px;left:50%;transform:translateX(-50%) translateY(-30px);background:rgba(20,25,22,.98);border:1px solid rgba(52,229,138,.3);border-radius:18px;padding:12px 20px;display:flex;align-items:center;gap:12px;z-index:855;opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1);}
+#charging-banner.on{opacity:1;transform:translateX(-50%) translateY(0);}
+#charging-banner svg{width:22px;height:22px;fill:var(--accent);}
+#charging-banner .txt{font-size:12.5px;font-weight:600;color:#fff;}
+#charging-banner .sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;}
+
+/* VOLUME HUD */
+#vhud{position:absolute;top:70px;left:50%;transform:translateX(-50%) translateY(-14px);z-index:850;padding:12px 18px;border-radius:18px;background:rgba(20,22,25,.98);display:flex;align-items:center;gap:12px;opacity:0;pointer-events:none;transition:all .25s;}
+#vhud.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#vhud svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+#vhud .bw{width:100px;height:5px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;}
+#vhud .bw i{display:block;height:100%;background:#fff;border-radius:3px;width:60%;}
+#vhud .vlbl{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.1em;font-weight:600;}
+
+#toast{position:absolute;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,22,25,.98);color:#fff;padding:11px 18px;border-radius:20px;font-size:12px;font-weight:500;z-index:900;opacity:0;transition:all .3s;pointer-events:none;border:1px solid rgba(255,255,255,.08);white-space:nowrap;max-width:80vw;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#ssFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:1000;transition:opacity .1s;}
+#ssFlash.on{opacity:1;}
+#recIndicator{position:absolute;top:40px;left:50%;transform:translateX(-50%);z-index:860;padding:6px 14px;border-radius:16px;background:rgba(255,77,94,.15);border:1px solid rgba(255,77,94,.4);display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:#fff;opacity:0;pointer-events:none;transition:opacity .3s;}
+#recIndicator.on{opacity:1;}
+#recIndicator .dot{width:8px;height:8px;border-radius:50%;background:#ff4d5e;animation:pulse 1.2s infinite;}
+#dim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:640;transition:opacity 1.5s;}
+
+/* TASK MANAGER */
+.tm-app{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;}
+.tm-app .tm-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.tm-app .tm-ico{width:34px;height:34px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tm-app .tm-ico svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.9;}
+.tm-app .tm-n{flex:1;font-size:13.5px;font-weight:600;}
+.tm-app .tm-stop{padding:6px 12px;border-radius:8px;background:rgba(255,77,94,.15);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;}
+.tm-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px;}
+.tm-bar{height:4px;background:rgba(128,128,128,.2);border-radius:2px;margin-top:8px;overflow:hidden;}
+.tm-bar i{display:block;height:100%;border-radius:2px;}
+
+.float-ctrl{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:9998;opacity:.35;}
+.float-ctrl .fc{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;border:1px solid rgba(255,255,255,.1);cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="device" id="device">
+  <div class="side pw" id="sb-pw"></div>
+  <div class="side vu" id="sb-vu"></div>
+  <div class="side vd" id="sb-vd"></div>
+
+  <div class="screen theme-green font-default shape-squircle" id="screen">
+    <div class="status" id="status">
+      <div id="st-time">--:--</div>
+      <div class="right" id="stRight">
+        <span id="stRecDot" style="display:none" class="rec-dot"></span>
+        <span class="offline-badge" id="stOffline">OFFLINE</span>
+        <svg class="sico" id="stMode" viewBox="0 0 24 24" style="display:none"></svg>
+        <svg class="sico" id="stDnd" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+        <svg class="sico" id="stBt" viewBox="0 0 24 24" style="display:none"><path d="M7 7l10 10-5 4V3l5 4-10 10"/></svg>
+        <svg class="sico" id="stCam" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="13" r="4"/><path d="M3 8h3l2-3h8l2 3h3v11H3z"/></svg>
+        <svg class="sico" id="stMic" viewBox="0 0 24 24" style="display:none"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0"/></svg>
+        <span class="bat-num" id="stBatNum">78%</span>
+        <div class="bat" id="stBatShell"><i id="stBat" style="width:78%"></i></div>
+      </div>
+    </div>
+
+    <div class="layer active" id="boot">
+      <div class="boot-logo">
+        <svg viewBox="0 0 120 120">
+          <circle class="boot-ring-base" cx="60" cy="60" r="52"/>
+          <circle class="boot-ring-draw" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="boot-mark">88</div>
+      </div>
+      <div class="boot-name">MC88_OS</div>
+      <div class="boot-lines" id="bootLines"></div>
+    </div>
+
+    <div class="layer" id="setup">
+      <div class="setup-progress" id="setupProg"></div>
+      <div id="setupContent" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="flex:1;overflow-y:auto;" id="setupBody"></div>
+        <button class="setup-next" id="setupNext" style="display:none;">Continue</button>
+      </div>
+    </div>
+
+    <div class="layer" id="lock">
+      <div class="lock-time" id="lk-time">--:--</div>
+      <div class="lock-date" id="lk-date">—</div>
+      <div class="lock-bat">
+        <span id="lk-pct">78</span>
+        <div class="bw"><i id="lk-bat" style="width:78%"></i></div>
+      </div>
+      <div class="lock-notifs" id="lkNotifs"></div>
+      <div class="lock-mid"></div>
+      <div class="lock-bottom">
+        <div class="lock-quick">
+          <div class="lock-q" id="lqTorch"><svg viewBox="0 0 24 24"><path d="M9 2h6l-1 5h-4L9 2z"/><path d="M10 7v8a2 2 0 002 2 2 2 0 002-2V7"/><path d="M12 17v5"/></svg></div>
+          <div class="lock-q" id="lqCamera"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M3 8h3l2-3h8l2 3h3v11H3z"/></svg></div>
+        </div>
+        <button class="lock-tap" id="lockTap">TAP TO UNLOCK</button>
+      </div>
+
+      <div class="pin-wrap" id="pinWrap">
+        <div class="pin-head">
+          <div class="pin-cancel" id="pinCancel">✕</div>
+          <div class="pin-title">Lock Screen</div>
+          <div class="pin-sp"></div>
+        </div>
+        <div class="pin-greet" id="pinGreet">Enter PIN</div>
+        <div class="pin-sub" id="pinSub">4‑digit code</div>
+        <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+        <div class="keypad" id="keypad"></div>
+        <div class="pin-forgot" id="forgotBtn">Forgot PIN?</div>
+      </div>
+    </div>
+
+    <div class="layer" id="home">
+      <div class="home-scroll" id="homeScroll">
+        <div class="home-search" id="homeSearch">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <span>Search apps…</span>
+        </div>
+        <div class="widgets" id="widgets"></div>
+        <div class="apps-grid" id="appsGrid"></div>
+      </div>
+      <div class="taskbar" id="taskbar">
+        <div class="tb-btn" id="tbHome" title="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-6h-6v6H5a2 2 0 01-2-2z"/></svg></div>
+        <div class="tb-apps" id="tbApps"></div>
+        <div class="tb-btn" id="tbDrawer" title="App Drawer"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="1.5"/><circle cx="12" cy="6" r="1.5"/><circle cx="18" cy="6" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/><circle cx="6" cy="18" r="1.5"/><circle cx="12" cy="18" r="1.5"/><circle cx="18" cy="18" r="1.5"/></svg></div>
+        <div class="tb-btn" id="tbRecents" title="Recents"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></div>
+      </div>
+    </div>
+
+    <div id="search">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="searchInput" type="text" placeholder="Search apps and settings…" autocomplete="off">
+        <div class="clr" id="searchClose">✕</div>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <div id="drawer">
+      <div class="drawer-head">
+        <div class="drawer-title">All apps</div>
+        <div class="drawer-close" id="drawerClose">✕</div>
+      </div>
+      <div class="drawer-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="drawerInput" type="text" placeholder="Filter apps…">
+      </div>
+      <div class="drawer-grid" id="drawerGrid"></div>
+    </div>
+
+    <div id="recents">
+      <div class="recents-head">
+        <div class="title">Recents</div>
+        <div class="clear-all" id="clearAllRecents">Clear all</div>
+      </div>
+      <div class="recents-grid" id="recentsGrid"></div>
+    </div>
+
+    <div id="qp">
+      <div class="qp-head">
+        <div class="qp-title">Quick Settings</div>
+        <div class="qp-close" id="qpClose">✕</div>
+      </div>
+      <div class="qp-modes" id="qpModes">
+        <div class="qp-mode" data-m="ring"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>Ring</div>
+        <div class="qp-mode" data-m="vibrate"><svg viewBox="0 0 24 24"><rect x="8" y="5" width="8" height="14" rx="2"/><path d="M3 9v6M21 9v6"/></svg>Vibrate</div>
+        <div class="qp-mode" data-m="silent"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>Silent</div>
+      </div>
+      <div class="qp-grid">
+        <div class="qp-btn" data-t="torch"><svg viewBox="0 0 24 24"><path d="M9 2h6l-1 5h-4L9 2z"/><path d="M10 7v8a2 2 0 002 2 2 2 0 002-2V7"/><path d="M12 17v5"/></svg><span>Torch</span></div>
+        <div class="qp-btn" data-t="bluetooth"><svg viewBox="0 0 24 24"><path d="M7 7l10 10-5 4V3l5 4-10 10"/></svg><span>BT</span></div>
+        <div class="qp-btn" data-t="dnd"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg><span>DND</span></div>
+        <div class="qp-btn" data-t="charge"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span>Charge</span></div>
+        <div class="qp-btn" data-t="rotate"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg><span>Rotate</span></div>
+        <div class="qp-btn" data-t="batsaver"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2"/><rect x="4" y="9" width="8" height="6" fill="currentColor"/></svg><span>Saver</span></div>
+        <div class="qp-btn" data-t="focus"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>Focus</span></div>
+        <div class="qp-btn" data-t="screenshot"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4h8v2M12 10v6M9 13h6"/></svg><span>Shot</span></div>
+        <div class="qp-btn" data-t="record"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span>Record</span></div>
+        <div class="qp-btn" data-t="night"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><span>Night</span></div>
+        <div class="qp-btn" data-t="installer"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 20h16"/></svg><span>Install</span></div>
+        <div class="qp-btn" data-t="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Settings</span></div>
+      </div>
+      <div class="qp-sliders">
+        <div class="qp-srow"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/></svg><span class="lbl">Bright</span><input type="range" id="qpBright" min="20" max="100" value="100"></div>
+        <div class="qp-srow"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg><span class="lbl">Media</span><input type="range" id="qpMedia" min="0" max="100" value="60"></div>
+        <div class="qp-srow"><svg viewBox="0 0 24 24"><path d="M12 2v20M5 8c3-3 11-3 14 0"/></svg><span class="lbl">Ring</span><input type="range" id="qpRing" min="0" max="100" value="70"></div>
+        <div class="qp-srow"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg><span class="lbl">Alarm</span><input type="range" id="qpAlarm" min="0" max="100" value="80"></div>
+        <div class="qp-srow"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/></svg><span class="lbl">System</span><input type="range" id="qpSystem" min="0" max="100" value="40"></div>
+      </div>
+      <div class="qp-notif-title"><span>Notifications</span><span class="clear-btn" id="clearNotifs">Clear all</span></div>
+      <div id="qpNotifs"></div>
+    </div>
+
+    <div class="layer" id="app">
+      <div class="app-head">
+        <div class="app-back" id="appBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="ttl" id="appTitle">App</div>
+        <div class="actions" id="appActions"></div>
+      </div>
+      <div class="app-body" id="appBody"></div>
+    </div>
+
+    <div id="lpMenu">
+      <div class="lp-sheet" id="lpSheet"></div>
+    </div>
+
+    <div id="alarmRing">
+      <div class="al-bell"><svg viewBox="0 0 24 24"><path d="M18 16v-5a6 6 0 00-12 0v5l-2 2h16z"/><path d="M10 20a2 2 0 004 0"/></svg></div>
+      <div class="al-time" id="alTimeBig">07:00</div>
+      <div class="al-label" id="alLabelBig">Alarm</div>
+      <div class="al-actions">
+        <button class="al-btn snooze" id="alSnooze">Snooze 5 min</button>
+        <button class="al-btn stop" id="alStop">Stop</button>
+      </div>
+    </div>
+
+    <div id="pm">
+      <button class="pm-btn" onclick="Power.action('restart')"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>Restart</button>
+      <button class="pm-btn danger" onclick="Power.action('off')"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.5 7a8 8 0 1011 0"/></svg>Power Off</button>
+      <button class="pm-btn" onclick="Power.action('cancel')">Cancel</button>
+    </div>
+
+    <div id="shutAnim">
+      <div class="spin"></div>
+      <div class="txt" id="shutTxt">Shutting down</div>
+    </div>
+
+    <div id="off">
+      <div class="off-batt">
+        <div class="shell"><i id="offFill" style="height:78%"></i></div>
+        <div class="pct" id="offPct">78%</div>
+        <div class="lbl" id="offLbl">Charging</div>
+      </div>
+      <div class="off-tap">Tap to wake</div>
+    </div>
+
+    <div id="vhud">
+      <svg viewBox="0 0 24 24" id="vhudIco"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>
+      <div class="bw"><i id="vhudFill"></i></div>
+      <div class="vlbl" id="vhudLbl">Media</div>
+    </div>
+
+    <div id="charging-banner">
+      <svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      <div>
+        <div class="txt">Charging</div>
+        <div class="sub"><span id="cbPct">78</span>% · Fast charge</div>
+      </div>
+    </div>
+
+    <div id="recIndicator"><div class="dot"></div><span id="recTime">00:00</span></div>
+
+    <div id="torchOverlay" style="position:absolute;inset:0;background:#fff;z-index:870;opacity:0;pointer-events:none;transition:opacity .3s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:60px;">
+      <div style="font-size:12px;color:#333;letter-spacing:2px;text-transform:uppercase;opacity:.6;">Tap to turn off</div>
+    </div>
+
+    <div class="modal-bg" id="recModal">
+      <div class="modal">
+        <h3>Recovery</h3>
+        <p>Use this code to unlock without your PIN. Or wipe the device permanently.</p>
+        <div class="cd" id="recCode">MC88-XXXX-XXXX</div>
+        <button class="modal-btn primary" id="recUnlock">Unlock with code</button>
+        <button class="modal-btn danger" id="recWipe">Wipe device</button>
+        <button class="modal-btn ghost" id="recCancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Universal modal -->
+    <div class="modal-bg" id="uniModal">
+      <div class="modal" id="uniModalBody"></div>
+    </div>
+
+    <!-- Keyboard -->
+    <div id="kb"></div>
+
+    <div id="ssFlash"></div>
+    <div id="dim"></div>
+    <div id="toast"></div>
+  </div>
+</div>
+
+<div class="float-ctrl">
+  <div class="fc" id="fc-vu">＋</div>
+  <div class="fc" id="fc-vd">−</div>
+  <div class="fc" id="fc-pw">⏻</div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* =========================================================
+   EVENT BUS — نظام التطبيقات غير المتزامن
+   ========================================================= */
+const Bus = {
+  _h: {},
+  on(evt, fn){ (this._h[evt] = this._h[evt] || []).push(fn); return () => this.off(evt, fn); },
+  off(evt, fn){ if(this._h[evt]) this._h[evt] = this._h[evt].filter(f => f !== fn); },
+  emit(evt, data){ (this._h[evt] || []).forEach(fn => { try{ fn(data); }catch(e){ console.error('Bus error', evt, e); } }); }
+};
+
+/* =========================================================
+   STORAGE LAYER — تغليف localStorage مع أسماء موحدة
+   ========================================================= */
+const Storage = {
+  set(k, v){ try{ localStorage.setItem('mc88.' + k, JSON.stringify(v)); }catch(e){} },
+  get(k, def){ try{ const v = localStorage.getItem('mc88.' + k); return v === null ? def : JSON.parse(v); }catch(e){ return def; } },
+  del(k){ localStorage.removeItem('mc88.' + k); },
+  clearAll(){ Object.keys(localStorage).filter(k => k.startsWith('mc88.')).forEach(k => localStorage.removeItem(k)); }
+};
+
+/* =========================================================
+   PIN HASH — تشفير بسيط (SHA-256 via SubtleCrypto مع fallback)
+   ========================================================= */
+async function hashPin(pin){
+  if(!pin) return null;
+  try{
+    const enc = new TextEncoder().encode('mc88_' + pin);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    // fallback بسيط
+    let h = 0; for(let i = 0; i < pin.length; i++){ h = ((h<<5) - h) + pin.charCodeAt(i); h |= 0; }
+    return 'fb' + Math.abs(h).toString(16);
+  }
+}
+
+/* =========================================================
+   STATE — مُدير حالة مركزي
+   ========================================================= */
+const State = {
+  theme: Storage.get('theme', 'green'),
+  wallpaper: Storage.get('wp', 'wp0'),
+  pinHash: Storage.get('pinHash', null),
+  recovery: Storage.get('rec', null),
+  setupDone: Storage.get('setup', false),
+  fontFamily: Storage.get('font', 'default'),
+  iconShape: Storage.get('shape', 'squircle'),
+  batStyle: Storage.get('batstyle', 'beside'),
+  mode: Storage.get('mode', 'ring'),
+  haptic: Storage.get('haptic', true),
+  screenTimeout: Storage.get('timeout', 120000),
+  autoRotate: Storage.get('rotate', false),
+  volMedia: Storage.get('vmedia', 60),
+  volRing: Storage.get('vring', 70),
+  volAlarm: Storage.get('valarm', 80),
+  volSystem: Storage.get('vsystem', 40),
+  battery: 78, charging: false,
+  bluetooth: false, dnd: false, batsaver: false, focus: false, torch: false, night: false,
+  brightness: 100,
+  navMode: Storage.get('nav', 'taskbar'),
+  screenOn: true, currentApp: null, settingsView: 'root',
+  usedRam: 2.4, totalRam: 8,
+  usedStorage: 48, totalStorage: 128,
+  usedSD: 12, totalSD: 64,
+  batteryHealth: 94,
+  musicPlaying: false, musicIdx: 0, musicProgress: 0, musicTimer: null,
+  folders: Storage.get('folders', []),
+  hiddenApps: Storage.get('hidden', []),
+  installedApps: Storage.get('installed', []),
+  alarms: Storage.get('alarms', []),
+  runningApps: Storage.get('running', []),
+  notifs: [],
+  notifLog: Storage.get('notifLog', []),
+  permissions: Storage.get('perms', {}), // { appId: { camera: 'granted'|'denied'|'ask' } }
+  auditLog: Storage.get('audit', []),
+  recStart: 0, recTimer: null, recording: false,
+  deepSleepTimer: null,
+  dimmed: false,
+  ringingAlarm: null,
+  failedPinAttempts: Storage.get('pinFails', 0),
+  pinLockUntil: Storage.get('pinLockUntil', 0),
+  clipboard: '',
+  isSetupEnv: false
+};
+
+// توليد رمز الاستعادة إذا لم يوجد
+if(!State.recovery){
+  State.recovery = 'MC88-' + Math.random().toString(36).slice(2,6).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+  Storage.set('rec', State.recovery);
+}
+
+const WALLPAPERS = {
+  wp0: 'linear-gradient(160deg,#0d201a 0%,#050a07 70%,#000 100%)',
+  wp1: 'linear-gradient(160deg,#2a1418 0%,#0a0505 100%)',
+  wp2: 'linear-gradient(160deg,#e8ecf0 0%,#bcc4cc 100%)',
+  wp3: 'linear-gradient(160deg,#0a0a0a 0%,#000 100%)',
+  wp4: 'linear-gradient(160deg,#152438 0%,#060a12 100%)',
+  wp5: 'linear-gradient(160deg,#2a1440 0%,#0a0414 100%)'
+};
+
+function haptic(ms){ if(State.haptic && navigator.vibrate) try{ navigator.vibrate(ms || 12); }catch(e){} }
+
+/* =========================================================
+   DEVICE SIZE
+   ========================================================= */
+(function(){
+  const device = $('#device');
+  const ua = navigator.userAgent || '';
+  const forceMobile = /Android|iPhone|iPad|iPod|Mobile|Opera Mini|IEMobile|BlackBerry|Windows Phone/i.test(ua)
+                   || (('ontouchstart' in window || (navigator.maxTouchPoints||0) > 0) && Math.min(window.innerWidth, window.innerHeight) < 900);
+  function resize(){
+    if(forceMobile){
+      device.classList.remove('desktop');
+      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      device.style.height = h + 'px';
+      device.style.width = '100vw';
+    } else { device.classList.add('desktop'); device.style.height = ''; device.style.width = ''; }
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', resize);
+    window.visualViewport.addEventListener('scroll', resize);
+  }
+  resize(); setTimeout(resize, 100); setTimeout(resize, 500); setTimeout(resize, 1500);
+})();
+
+/* =========================================================
+   BRIGHTNESS OVERLAY
+   ========================================================= */
+function applyBrightnessOverlay(){
+  let ov = document.getElementById('brightnessOverlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'brightnessOverlay';
+    ov.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:#000;pointer-events:none;z-index:998;opacity:0;transition:opacity .2s;';
+    $('#screen').appendChild(ov);
+  }
+  ov.style.opacity = (1 - State.brightness/100).toFixed(3);
+}
+
+/* =========================================================
+   APPLY
+   ========================================================= */
+function applyAll(){
+  $('#screen').className = 'screen theme-' + State.theme + ' font-' + State.fontFamily + ' shape-' + State.iconShape;
+  const wp = WALLPAPERS[State.wallpaper] || WALLPAPERS.wp0;
+  $('#lock').style.background = wp;
+  $('#home').style.background = wp;
+  applyBrightnessOverlay();
+  applyBatStyle();
+  applyMode();
+}
+function applyBatStyle(){
+  const shell = $('#stBatShell'); const num = $('#stBatNum');
+  num.className = 'bat-num'; shell.className = 'bat';
+  if(State.batStyle === 'inside'){ num.classList.add('inside'); }
+  else if(State.batStyle === 'hidden'){ shell.classList.add('hidden'); num.classList.add('hidden'); }
+}
+function applyMode(){
+  const ico = $('#stMode');
+  ico.style.display = State.mode === 'ring' ? 'none' : 'block';
+  if(State.mode === 'silent') ico.innerHTML = '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/>';
+  else if(State.mode === 'vibrate') ico.innerHTML = '<rect x="8" y="5" width="8" height="14" rx="2"/><path d="M3 9v6M21 9v6"/>';
+  $$('#qpModes .qp-mode').forEach(m => m.classList.toggle('on', m.dataset.m === State.mode));
+}
+
+/* =========================================================
+   CLOCK + BATTERY
+   ========================================================= */
+function tick(){
+  const d = new Date();
+  const t = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  const dt = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  $('#st-time').textContent = t;
+  $('#lk-time').textContent = t;
+  $('#lk-date').textContent = dt;
+  if(d.getSeconds() < 2) checkAlarms(d);
+}
+setInterval(tick, 1000); tick();
+
+function renderBattery(){
+  const p = Math.round(State.battery);
+  $('#stBatNum').textContent = p + '%';
+  $('#stBat').style.width = p + '%';
+  $('#stBat').className = p < 20 ? 'low' : '';
+  $('#lk-pct').textContent = p;
+  $('#lk-bat').style.width = p + '%';
+  $('#offFill').style.height = p + '%';
+  $('#offPct').textContent = p + '%';
+  $('#cbPct').textContent = p;
+  $('#offLbl').textContent = State.charging ? 'Charging' : 'Press power to turn on';
+  $('#off').classList.toggle('charging', State.charging);
+}
+setInterval(()=>{
+  if(State.charging && State.battery < 100) State.battery = Math.min(100, State.battery + 1);
+  else if(!State.charging && State.battery > 0 && State.screenOn) State.battery = Math.max(1, State.battery - 0.04);
+  renderBattery();
+}, 3200);
+
+/* =========================================================
+   LAYERS + TOAST
+   ========================================================= */
+function show(id){
+  $$('.layer').forEach(l => l.classList.remove('active'));
+  if(id) $('#'+id).classList.add('active');
+}
+function toast(msg, ms){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), ms || 2000);
+}
+
+/* =========================================================
+   UNIVERSAL MODAL
+   ========================================================= */
+function showModal(html){
+  $('#uniModalBody').innerHTML = html;
+  $('#uniModal').classList.add('on');
+}
+function hideModal(){ $('#uniModal').classList.remove('on'); }
+$('#uniModal').addEventListener('click', e => { if(e.target.id === 'uniModal') hideModal(); });
+
+/* =========================================================
+   BOOT — sequence حقيقية بخطوات
+   ========================================================= */
+const BOOT_STEPS = [
+  { t:'Kernel loaded', d:80 },
+  { t:'MC88-core services starting…', d:120 },
+  { t:'Started storage daemon (12/12)', d:100 },
+  { t:'Package manager ready', d:80 },
+  { t:'Permission service online', d:60 },
+  { t:'Notification service online', d:60 },
+  { t:'Audio manager online', d:80 },
+  { t:'Power manager online', d:60 },
+  { t:'Loading user data…', d:120 },
+  { t:'Ready', d:60 }
+];
+function boot(cb){
+  show('boot');
+  const lines = $('#bootLines');
+  lines.innerHTML = '';
+  $('#boot').querySelectorAll('.boot-logo, .boot-name').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  let i = 0;
+  const totalTime = BOOT_STEPS.reduce((a,b) => a + b.d, 0);
+  const startT = Date.now();
+  const advance = () => {
+    if(i >= BOOT_STEPS.length){
+      setTimeout(() => { State.screenOn = true; if(cb) cb(); resetDeepSleep(); }, 300);
+      return;
+    }
+    const s = BOOT_STEPS[i];
+    const line = document.createElement('div');
+    line.className = 'ok';
+    line.textContent = '[ ✓ ] ' + s.t;
+    lines.appendChild(line);
+    if(lines.children.length > 6) lines.removeChild(lines.firstChild);
+    i++;
+    setTimeout(advance, s.d);
+  };
+  setTimeout(advance, 400);
+}
+
+/* =========================================================
+   DEEP SLEEP
+   ========================================================= */
+function resetDeepSleep(){
+  clearTimeout(State.deepSleepTimer);
+  if(State.dimmed){ $('#dim').style.opacity = '0'; State.dimmed = false; }
+  if(State.screenTimeout > 0 && State.screenOn){
+    State.deepSleepTimer = setTimeout(goDeepSleep, State.screenTimeout);
+  }
+}
+function goDeepSleep(){
+  State.dimmed = true;
+  $('#dim').style.opacity = '1';
+  setTimeout(() => {
+    if(State.dimmed){
+      State.screenOn = false;
+      show(null);
+      $('#off').classList.add('on');
+      renderBattery();
+    }
+  }, 1500);
+}
+['click','touchstart','keydown','mousemove'].forEach(ev => {
+  document.addEventListener(ev, () => {
+    if(State.screenOn && !State.dimmed) resetDeepSleep();
+    if(State.dimmed){ State.dimmed = false; $('#dim').style.opacity = '0'; resetDeepSleep(); }
+  }, {passive:true});
+});
+
+/* =========================================================
+   SCREENSHOT / RECORD
+   ========================================================= */
+function takeScreenshot(){
+  haptic(20);
+  const f = $('#ssFlash');
+  f.classList.add('on');
+  setTimeout(() => f.classList.remove('on'), 100);
+  toast('Screenshot saved to Gallery');
+}
+function toggleScreenRecord(){
+  haptic(20);
+  if(State.recording){
+    State.recording = false;
+    clearInterval(State.recTimer);
+    $('#recIndicator').classList.remove('on');
+    $('#stRecDot').style.display = 'none';
+    toast('Recording saved');
+    return;
+  }
+  State.recording = true;
+  State.recStart = Date.now();
+  $('#recIndicator').classList.add('on');
+  $('#stRecDot').style.display = 'block';
+  State.recTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - State.recStart)/1000);
+    $('#recTime').textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  }, 1000);
+  toast('Screen recording started');
+}
+
+/* =========================================================
+   POWER
+   ========================================================= */
+const Power = {
+  action(a){
+    if(a === 'cancel'){ $('#pm').classList.remove('on'); return; }
+    if(a === 'restart'){
+      $('#pm').classList.remove('on'); toggleTorchOff();
+      $('#shutTxt').textContent = 'Restarting';
+      $('#shutAnim').classList.add('on');
+      setTimeout(() => { $('#shutAnim').classList.remove('on'); boot(() => show('lock')); }, 1600);
+      return;
+    }
+    if(a === 'off'){
+      $('#pm').classList.remove('on'); toggleTorchOff();
+      $('#shutTxt').textContent = 'Shutting down';
+      $('#shutAnim').classList.add('on');
+      setTimeout(() => {
+        $('#shutAnim').classList.remove('on');
+        show(null); State.screenOn = false;
+        $('#off').classList.add('on'); renderBattery();
+      }, 1600);
+      return;
+    }
+  }
+};
+function toggleTorchOff(){
+  if(State.torch){ State.torch = false; $('#torchOverlay').style.opacity = '0'; $('#torchOverlay').style.pointerEvents = 'none'; const q = document.querySelector('.qp-btn[data-t="torch"]'); if(q) q.classList.remove('on'); }
+}
+$('#off').onclick = () => { $('#off').classList.remove('on'); boot(() => show('lock')); };
+
+let pwTimer = null;
+function handlePower(){
+  haptic(15);
+  if(pwTimer){ clearTimeout(pwTimer); pwTimer = null; toggleTorch(); return; }
+  pwTimer = setTimeout(() => {
+    pwTimer = null;
+    if(!State.screenOn){ $('#off').classList.remove('on'); boot(() => show('lock')); }
+    else { $('#pm').classList.toggle('on'); }
+  }, 280);
+}
+$('#sb-pw').addEventListener('click', handlePower);
+$('#fc-pw').addEventListener('click', handlePower);
+
+function setVolume(stream, d){
+  const k = 'vol' + stream.charAt(0).toUpperCase() + stream.slice(1);
+  State[k] = Math.max(0, Math.min(100, State[k] + d));
+  Storage.set('v' + stream, State[k]);
+  const v = State[k];
+  $('#vhudFill').style.width = v + '%';
+  $('#vhudLbl').textContent = stream;
+  const icon = stream === 'media'
+    ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/>'
+    : '<path d="M12 2v20M5 8c3-3 11-3 14 0"/>';
+  $('#vhudIco').innerHTML = icon;
+  const h = $('#vhud'); h.classList.add('show');
+  clearTimeout(h._t); h._t = setTimeout(() => h.classList.remove('show'), 1400);
+  haptic(8);
+}
+$('#sb-vu').addEventListener('click', () => setVolume('media', +10));
+$('#sb-vd').addEventListener('click', () => setVolume('media', -10));
+$('#fc-vu').addEventListener('click', () => setVolume('media', +10));
+$('#fc-vd').addEventListener('click', () => setVolume('media', -10));
+
+function setCharging(on){
+  State.charging = on; renderBattery();
+  if(on){
+    const b = $('#charging-banner'); b.classList.add('on');
+    clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('on'), 3500);
+    pushNotif('Battery', 'Charging — ' + Math.round(State.battery) + '%', 'system');
+  } else { $('#charging-banner').classList.remove('on'); }
+}
+
+/* =========================================================
+   NOTIFICATIONS — مع سجل وقنوات
+   ========================================================= */
+const NOTIF_CHANNELS = {
+  system: { name: 'System', color: 'var(--info)' },
+  battery: { name: 'Battery', color: 'var(--accent)' },
+  app: { name: 'Apps', color: 'var(--accent)' },
+  alarm: { name: 'Alarms', color: 'var(--warn)' },
+  security: { name: 'Security', color: 'var(--danger)' }
+};
+function pushNotif(title, body, channel){
+  channel = channel || 'app';
+  const n = { title, body, channel, t: Date.now(), id: 'n' + Date.now() + Math.random().toString(36).slice(2,6) };
+  State.notifs.push(n);
+  if(State.notifs.length > 8) State.notifs.shift();
+  State.notifLog.push(n);
+  if(State.notifLog.length > 100) State.notifLog.shift();
+  Storage.set('notifLog', State.notifLog);
+  renderNotifs();
+  Bus.emit('notif.posted', n);
+}
+function clearNotifs(){
+  State.notifs = [];
+  renderNotifs();
+}
+function renderNotifs(){
+  const qpEl = $('#qpNotifs'); const lkEl = $('#lkNotifs');
+  qpEl.innerHTML = ''; lkEl.innerHTML = '';
+  if(State.notifs.length === 0){
+    qpEl.innerHTML = '<div class="qp-notif"><div class="ni"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5z"/></svg></div><div class="nc"><div class="t1">MC88_OS</div><div class="t2">Welcome. Fully offline.</div></div></div>';
+    return;
+  }
+  State.notifs.slice().reverse().forEach(n => {
+    const d1 = document.createElement('div'); d1.className = 'qp-notif';
+    const age = Math.floor((Date.now() - n.t) / 60000);
+    const t = age < 1 ? 'now' : age + 'm ago';
+    const chColor = (NOTIF_CHANNELS[n.channel]||{}).color || 'var(--accent)';
+    d1.innerHTML = '<div class="ni"><svg viewBox="0 0 24 24" style="stroke:' + chColor + '"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg></div><div class="nc"><div class="t1">' + n.title + '</div><div class="t2">' + n.body + '</div><div class="nt">' + t + '</div></div>';
+    d1.onclick = () => { haptic(10); toast('Opening ' + n.title); };
+    qpEl.appendChild(d1);
+    const d2 = document.createElement('div'); d2.className = 'lock-notif';
+    d2.innerHTML = '<b>' + n.title + '</b>' + n.body;
+    lkEl.appendChild(d2);
+  });
+}
+$('#clearNotifs').onclick = () => { haptic(15); clearNotifs(); toast('Notifications cleared'); };
+renderNotifs();
+
+/* =========================================================
+   PERMISSIONS SYSTEM
+   ========================================================= */
+const PERMS = {
+  camera:     { n: 'Camera',     icon: '<circle cx="12" cy="13" r="4"/><path d="M3 8h3l2-3h8l2 3h3v11H3z"/>' },
+  microphone: { n: 'Microphone', icon: '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>' },
+  storage:    { n: 'Storage',    icon: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>' },
+  location:   { n: 'Location',   icon: '<path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>' },
+  contacts:   { n: 'Contacts',   icon: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>' },
+  notifications: { n: 'Notifications', icon: '<path d="M18 16v-5a6 6 0 00-12 0v5l-2 2h16z"/>' }
+};
+function getPermState(appId, perm){
+  return (State.permissions[appId] || {})[perm] || 'ask';
+}
+function setPermState(appId, perm, v){
+  State.permissions[appId] = State.permissions[appId] || {};
+  State.permissions[appId][perm] = v;
+  Storage.set('perms', State.permissions);
+  // audit log
+  State.auditLog.push({ app: appId, perm, action: v, t: Date.now() });
+  if(State.auditLog.length > 500) State.auditLog.shift();
+  Storage.set('audit', State.auditLog);
+  Bus.emit('permission.changed', { app: appId, perm, state: v });
+}
+function requestPermission(appId, perm, cb){
+  const current = getPermState(appId, perm);
+  if(current === 'granted'){ cb && cb(true); return; }
+  if(current === 'denied'){ cb && cb(false); return; }
+  const p = PERMS[perm];
+  const app = APPS.find(a => a.id === appId);
+  showModal(`
+    <h3>${app ? app.label : 'App'} wants access</h3>
+    <p>The app is requesting the following permission. You can change this later in Settings.</p>
+    <div class="perm-row" style="margin-bottom:16px;">
+      <div class="pl">
+        <div class="pi"><svg viewBox="0 0 24 24">${p.icon}</svg></div>
+        <div><div class="pn">${p.n}</div><div class="pd">Required for this action</div></div>
+      </div>
+    </div>
+    <button class="modal-btn primary" id="permAllow">Allow</button>
+    <button class="modal-btn ghost" id="permDeny">Deny</button>
+  `);
+  $('#permAllow').onclick = () => { setPermState(appId, perm, 'granted'); hideModal(); cb && cb(true); };
+  $('#permDeny').onclick = () => { setPermState(appId, perm, 'denied'); hideModal(); cb && cb(false); };
+}
+
+/* =========================================================
+   VIRTUAL KEYBOARD
+   ========================================================= */
+const KB = {
+  open: false,
+  target: null,
+  shift: false,
+  layout: 'letters',
+  rows: {
+    letters: ['qwertyuiop','asdfghjkl','zxcvbnm'],
+    numbers: ['1234567890','-/:;()$&@"','.,?!\'"']
+  },
+  openFor(input){
+    this.target = input;
+    this.open = true;
+    this.render();
+    $('#kb').classList.add('open');
+    document.getElementById('appBody') && setTimeout(() => {
+      try{ input.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){}
+    }, 300);
+  },
+  close(){
+    this.open = false;
+    this.target = null;
+    $('#kb').classList.remove('open');
+  },
+  insert(ch){
+    if(!this.target) return;
+    const inp = this.target;
+    if(typeof inp.value !== 'undefined'){
+      const start = inp.selectionStart || inp.value.length;
+      const end = inp.selectionEnd || inp.value.length;
+      inp.value = inp.value.slice(0,start) + ch + inp.value.slice(end);
+      inp.selectionStart = inp.selectionEnd = start + ch.length;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      inp.textContent += ch;
+    }
+    haptic(6);
+  },
+  backspace(){
+    if(!this.target) return;
+    const inp = this.target;
+    if(typeof inp.value !== 'undefined'){
+      const start = inp.selectionStart || 0;
+      const end = inp.selectionEnd || 0;
+      if(start !== end){
+        inp.value = inp.value.slice(0,start) + inp.value.slice(end);
+        inp.selectionStart = inp.selectionEnd = start;
+      } else if(start > 0){
+        inp.value = inp.value.slice(0,start-1) + inp.value.slice(start);
+        inp.selectionStart = inp.selectionEnd = start - 1;
+      }
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    haptic(6);
+  },
+  render(){
+    const kb = $('#kb');
+    kb.innerHTML = '';
+    // number row
+    const numRow = document.createElement('div'); numRow.className = 'kb-num-row';
+    ['1','2','3','4','5','6','7','8','9','0'].forEach(n => {
+      const b = document.createElement('button'); b.className = 'kb-num'; b.textContent = n;
+      b.onclick = () => this.insert(n);
+      numRow.appendChild(b);
+    });
+    kb.appendChild(numRow);
+
+    const layoutKey = this.layout;
+    const rows = this.layout === 'letters'
+      ? ['qwertyuiop','asdfghjkl','zxcvbnm']
+      : ['1234567890','-/:;()$&@"','.,?!\'"'];
+    rows.forEach((row, ri) => {
+      const r = document.createElement('div'); r.className = 'kb-row';
+      if(ri === 2 && this.layout === 'letters'){
+        const sh = document.createElement('button');
+        sh.className = 'kb-key shift' + (this.shift ? ' on' : '');
+        sh.textContent = '⇧';
+        sh.onclick = () => { this.shift = !this.shift; this.render(); };
+        r.appendChild(sh);
+      }
+      row.split('').forEach(ch => {
+        const b = document.createElement('button');
+        b.className = 'kb-key';
+        b.textContent = this.layout === 'letters' && this.shift ? ch.toUpperCase() : ch;
+        b.onclick = () => {
+          this.insert(b.textContent);
+          if(this.shift && this.layout === 'letters'){ this.shift = false; this.render(); }
+        };
+        r.appendChild(b);
+      });
+      if(ri === 2 && this.layout === 'letters'){
+        const bk = document.createElement('button');
+        bk.className = 'kb-key'; bk.textContent = '⌫';
+        bk.onclick = () => this.backspace();
+        r.appendChild(bk);
+      }
+      kb.appendChild(r);
+    });
+
+    const r3 = document.createElement('div'); r3.className = 'kb-row';
+    const layoutBtn = document.createElement('button');
+    layoutBtn.className = 'kb-key wide';
+    layoutBtn.textContent = this.layout === 'letters' ? '123' : 'ABC';
+    layoutBtn.onclick = () => { this.layout = this.layout === 'letters' ? 'numbers' : 'letters'; this.render(); };
+    const space = document.createElement('button');
+    space.className = 'kb-key space';
+    space.textContent = 'space';
+    space.onclick = () => this.insert(' ');
+    const dot = document.createElement('button');
+    dot.className = 'kb-key';
+    dot.textContent = '.';
+    dot.onclick = () => this.insert('.');
+    const enter = document.createElement('button');
+    enter.className = 'kb-key wide';
+    enter.textContent = '⏎';
+    enter.style.background = 'var(--accent)';
+    enter.style.color = 'var(--bg)';
+    enter.onclick = () => { this.insert('\n'); if(this.target && this.target.tagName !== 'TEXTAREA') this.close(); };
+    r3.appendChild(layoutBtn); r3.appendChild(space); r3.appendChild(dot); r3.appendChild(enter);
+    kb.appendChild(r3);
+  }
+};
+// hook into all text inputs/textareas via delegation
+document.addEventListener('focusin', e => {
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && !t.dataset.noKb){
+    KB.openFor(t);
+  }
+});
+
+/* =========================================================
+   CLIPBOARD — context menu integration
+   ========================================================= */
+function copyToClipboard(text){
+  State.clipboard = text;
+  try{ navigator.clipboard && navigator.clipboard.writeText(text); }catch(e){}
+  toast('Copied');
+}
+function pasteFromClipboard(input){
+  if(!State.clipboard){ toast('Clipboard empty'); return; }
+  if(input && typeof input.value !== 'undefined'){
+    const start = input.selectionStart || input.value.length;
+    input.value = input.value.slice(0,start) + State.clipboard + input.value.slice(start);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } else { toast('Nothing to paste'); }
+}
+
+/* =========================================================
+   SHARE SHEET
+   ========================================================= */
+function openShareSheet(payload){
+  const apps = ['notes','files','gallery','music'];
+  showModal(`
+    <h3>Share</h3>
+    <p>Send this content to another app on the device.</p>
+    <div class="share-grid">
+      ${apps.map(id => {
+        const a = APPS.find(x => x.id === id);
+        return `<div class="share-app" data-id="${id}"><div class="si"><svg viewBox="0 0 24 24">${a.svg}</svg></div><div class="sl">${a.label}</div></div>`;
+      }).join('')}
+    </div>
+    <div style="background:var(--surface);border-radius:12px;padding:12px;font-size:12px;color:var(--muted);margin-bottom:12px;">"${(payload || '').slice(0,80)}${(payload||'').length>80?'…':''}"</div>
+    <button class="modal-btn primary" id="shareCopy">Copy to clipboard</button>
+    <button class="modal-btn ghost" onclick="hideModal()">Cancel</button>
+  `);
+  document.querySelectorAll('#uniModalBody .share-app').forEach(el => {
+    el.onclick = () => {
+      const a = APPS.find(x => x.id === el.dataset.id);
+      hideModal();
+      toast('Shared to ' + a.label);
+      pushNotif('Share', 'Content shared to ' + a.label, 'app');
+    };
+  });
+  $('#shareCopy').onclick = () => { copyToClipboard(payload || ''); hideModal(); };
+}
+
+/* =========================================================
+   CRASH DIALOG
+   ========================================================= */
+function simulateCrash(appLabel){
+  showModal(`
+    <div class="crash-icon"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <h3 style="text-align:center;">${appLabel} has stopped</h3>
+    <p style="text-align:center;">The app crashed unexpectedly. You can report the issue or close it.</p>
+    <div class="crash-stack">java.lang.RuntimeException: Unable to start activity
+  at com.mc88.${appLabel.toLowerCase()}.Main.onCreate(Main.java:42)
+  at android.app.Activity.performCreate(Activity.java:8051)
+Caused by: NullPointerException
+  ...</div>
+    <button class="modal-btn primary" onclick="hideModal();toast('Report sent')">Report issue</button>
+    <button class="modal-btn ghost" onclick="hideModal()">Close app</button>
+  `);
+}
+
+/* =========================================================
+   LOCK SCREEN + PIN
+   ========================================================= */
+const _lockTapBtn = document.getElementById('lockTap');
+let _lastUnlockTap = 0;
+function _doUnlockTap(e){
+  if(e && e.preventDefault) e.preventDefault();
+  const now = Date.now();
+  if(now - _lastUnlockTap < 500) return;
+  _lastUnlockTap = now;
+  haptic(12);
+  openPin();
+}
+_lockTapBtn.addEventListener('click', _doUnlockTap);
+_lockTapBtn.addEventListener('touchend', _doUnlockTap, {passive:false});
+_lockTapBtn.addEventListener('pointerup', _doUnlockTap);
+
+document.getElementById('lock').addEventListener('click', (e) => {
+  const t = e.target;
+  if(!t || !t.closest) return;
+  if(t.closest('#lqTorch') || t.closest('#lqCamera') || t.closest('#pinWrap') || t.closest('#lockTap')) return;
+  if(document.getElementById('pinWrap').classList.contains('open')) return;
+  _doUnlockTap();
+});
+
+$('#lqTorch').onclick = () => { haptic(15); toggleTorch(); };
+$('#lqCamera').onclick = () => { haptic(15); openPin(); setTimeout(() => { unlockWith('camera'); }, 400); };
+
+function openPin(){
+  // فحص قفل المحاولات
+  if(State.pinLockUntil && Date.now() < State.pinLockUntil){
+    const rem = Math.ceil((State.pinLockUntil - Date.now()) / 1000);
+    $('#pinGreet').textContent = 'Locked';
+    $('#pinSub').textContent = 'Try again in ' + rem + 's';
+    setTimeout(openPin, 1000);
+    $('#pinWrap').classList.add('open');
+    buildKeypad();
+    return;
+  }
+  $('#pinGreet').textContent = 'Enter PIN';
+  $('#pinSub').textContent = '4‑digit code';
+  $('#pinWrap').classList.add('open');
+  buildKeypad();
+  resetPin();
+}
+function unlockWith(app){
+  State.currentApp = null;
+  show('home');
+  renderHome();
+  if(app) setTimeout(() => openApp(app), 200);
+}
+function resetPin(){ pinBuf = ''; renderPinDots(); }
+function renderPinDots(){ const d = $('#pinDots').children; for(let i=0;i<4;i++) d[i].classList.toggle('filled', i < pinBuf.length); }
+let pinBuf = '';
+function buildKeypad(){
+  const kp = $('#keypad'); kp.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k => {
+    const b = document.createElement('button');
+    if(k === ''){ b.style.visibility = 'hidden'; }
+    else if(k === '⌫'){ b.textContent = '⌫'; b.className = 'ghost'; }
+    else { b.textContent = k; }
+    b.addEventListener('click', ()=>{
+      haptic(8);
+      if(k === '⌫'){ pinBuf = pinBuf.slice(0,-1); renderPinDots(); return; }
+      if(k === '') return;
+      if(pinBuf.length < 4){ pinBuf += k; renderPinDots(); }
+      if(pinBuf.length === 4) checkPin();
+    });
+    kp.appendChild(b);
+  });
+}
+async function checkPin(){
+  const h = await hashPin(pinBuf);
+  if(h === State.pinHash){
+    State.failedPinAttempts = 0;
+    Storage.set('pinFails', 0);
+    State.pinLockUntil = 0;
+    Storage.set('pinLockUntil', 0);
+    setTimeout(()=>{ $('#pinWrap').classList.remove('open'); unlockWith(); }, 100);
+  } else {
+    haptic(80);
+    State.failedPinAttempts++;
+    Storage.set('pinFails', State.failedPinAttempts);
+    if(State.failedPinAttempts >= 5){
+      State.pinLockUntil = Date.now() + 30000;
+      Storage.set('pinLockUntil', State.pinLockUntil);
+      State.failedPinAttempts = 0;
+      pushNotif('Security', 'Too many failed attempts — locked 30s', 'security');
+    }
+    const d = $('#pinDots'); d.classList.add('shake');
+    setTimeout(()=>{ d.classList.remove('shake'); resetPin(); if(State.pinLockUntil && Date.now() < State.pinLockUntil){ $('#pinGreet').textContent = 'Locked'; $('#pinSub').textContent = 'Try again in 30s'; setTimeout(() => { $('#pinGreet').textContent = 'Enter PIN'; $('#pinSub').textContent = '4‑digit code'; }, 30000); } }, 500);
+  }
+}
+$('#pinCancel').onclick = () => { $('#pinWrap').classList.remove('open'); };
+$('#forgotBtn').onclick = () => { $('#recCode').textContent = State.recovery; $('#recModal').classList.add('on'); };
+$('#recCancel').onclick = () => $('#recModal').classList.remove('on');
+$('#recUnlock').onclick = () => { $('#recModal').classList.remove('on'); $('#pinWrap').classList.remove('open'); unlockWith(); };
+$('#recWipe').onclick = () => { $('#recModal').classList.remove('on'); Storage.clearAll(); localStorage.clear(); location.reload(); };
+
+/* =========================================================
+   APPS REGISTRY
+   ========================================================= */
+const APPS = [
+  { id:'music',     label:'Music',     svg:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>', system: true },
+  { id:'camera',    label:'Camera',    svg:'<circle cx="12" cy="13" r="4"/><path d="M3 8h3l2-3h8l2 3h3v11H3z"/>', system: true },
+  { id:'gallery',   label:'Gallery',   svg:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 18l5-5 4 4 4-4 5 5"/>', system: true },
+  { id:'files',     label:'Files',     svg:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>', system: true },
+  { id:'notes',     label:'Notes',     svg:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>', system: false },
+  { id:'calculator',label:'Calculator',svg:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 19h2M12 19h2"/>', system: true },
+  { id:'calendar',  label:'Calendar',  svg:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>', system: true },
+  { id:'recorder',  label:'Recorder',  svg:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>', system: false },
+  { id:'alarm',     label:'Alarm',     svg:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3l2 2M19 3l-2 2"/>', system: true },
+  { id:'torch',     label:'Torch',     svg:'<path d="M9 2h6l-1 5h-4L9 2z"/><path d="M10 7v8a2 2 0 002 2 2 2 0 002-2V7"/><path d="M12 17v5"/>', system: true },
+  { id:'trash',     label:'Trash',     svg:'<path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>', system: true },
+  { id:'installer', label:'Installer', svg:'<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 20h16"/>', system: true },
+  { id:'settings',  label:'Settings',  svg:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>', system: true }
+];
+
+/* =========================================================
+   WIDGETS
+   ========================================================= */
+function renderWidgets(){
+  const w = $('#widgets');
+  const d = new Date();
+  const p = Math.round(State.battery);
+  const track = MUSIC_TRACKS[State.musicIdx];
+  const mProg = track ? (State.musicProgress/track.d*100) : 0;
+  w.innerHTML = `
+    <div class="widget w-bat" data-w="bat">
+      <div class="wtop">Battery</div>
+      <div class="wval">${p}<span class="pct">%</span></div>
+      <div class="wsub">${State.charging ? '⚡ Charging' : (p > 20 ? 'Good' : 'Low')}</div>
+    </div>
+    <div class="widget" data-w="clock">
+      <div class="wtop">Time</div>
+      <div class="wval">${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div>
+      <div class="wsub">${d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'})}</div>
+    </div>
+    <div class="widget wide w-music" data-w="music">
+      <div class="wtop"><span>♪ Now Playing</span><span>${State.musicPlaying ? '▶' : '❚❚'}</span></div>
+      <div>
+        <div class="w-music-title">${track ? track.t : 'No track'}</div>
+        <div class="w-music-artist">${track ? track.a : ''}</div>
+      </div>
+      <div class="w-prog"><i style="width:${mProg}%"></i></div>
+    </div>
+  `;
+  w.querySelectorAll('.widget').forEach(el => {
+    el.onclick = () => {
+      haptic(10);
+      const t = el.dataset.w;
+      if(t === 'bat') openApp('settings', 'batdetail');
+      else if(t === 'music') openApp('music');
+      else if(t === 'clock') openApp('alarm');
+    };
+  });
+}
+
+/* =========================================================
+   HOME
+   ========================================================= */
+function renderHome(){
+  renderWidgets();
+  renderApps();
+  renderTaskbar();
+  renderBadges();
+}
+function renderBadges(){
+  const badges = {};
+  State.notifs.forEach(n => { badges[n.title] = (badges[n.title]||0) + 1; });
+  // simplified: attach badge to app icons matching title
+}
+function renderApps(){
+  const grid = $('#appsGrid');
+  grid.innerHTML = '';
+  const visible = APPS.filter(a => !State.hiddenApps.includes(a.id));
+  State.folders.forEach(folder => {
+    const el = document.createElement('div');
+    el.className = 'app folder';
+    const appsIn = folder.apps.slice(0,4).map(id => APPS.find(a => a.id === id)).filter(Boolean);
+    const minis = appsIn.map(a => '<div class="mini"><svg viewBox="0 0 24 24">' + a.svg + '</svg></div>').join('');
+    el.innerHTML = '<div class="ic">' + minis + '</div><div class="lb">' + folder.name + '</div>';
+    el.onclick = () => { haptic(10); openFolder(folder.id); };
+    attachLongPress(el, { id: 'folder:' + folder.id, label: folder.name, svg: '', isFolder: true });
+    grid.appendChild(el);
+  });
+  visible.forEach((app) => {
+    const el = document.createElement('div');
+    el.className = 'app';
+    el.innerHTML = '<div class="ic"><svg viewBox="0 0 24 24">' + app.svg + '</svg></div><div class="lb">' + app.label + '</div>';
+    el.onclick = () => { haptic(10); openApp(app.id); };
+    attachLongPress(el, app);
+    grid.appendChild(el);
+  });
+}
+function attachLongPress(el, app){
+  let timer = null, moved = false, startX = 0, startY = 0;
+  const start = (x, y) => {
+    moved = false; startX = x; startY = y;
+    timer = setTimeout(() => { if(!moved){ haptic(30); showLpMenu(app); } }, 500);
+  };
+  const move = (x, y) => {
+    if(Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10){ moved = true; clearTimeout(timer); }
+  };
+  el.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+  el.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+  el.addEventListener('touchend', () => clearTimeout(timer));
+  el.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+  el.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+  el.addEventListener('mouseup', () => clearTimeout(timer));
+  el.addEventListener('mouseleave', () => clearTimeout(timer));
+}
+
+/* =========================================================
+   LONG PRESS MENU
+   ========================================================= */
+function showLpMenu(app){
+  const sheet = $('#lpSheet');
+  if(app.isFolder){
+    const f = State.folders.find(x => 'folder:' + x.id === app.id);
+    sheet.innerHTML = `
+      <div class="lp-title">
+        <div class="li"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div><div class="ln">${f.name}</div><div class="ls">${f.apps.length} apps</div></div>
+      </div>
+      <div class="lp-action" data-a="open"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M21 15v4a2 2 0 01-2 2h-4M3 15v4a2 2 0 002 2h4"/></svg>Open</div>
+      <div class="lp-action" data-a="rename"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Rename</div>
+      <div class="lp-action danger" data-a="delfolder"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete folder</div>
+    `;
+    sheet.querySelectorAll('.lp-action').forEach(b => {
+      b.onclick = () => {
+        const a = b.dataset.a;
+        hideLpMenu();
+        if(a === 'open') openFolder(f.id);
+        else if(a === 'rename'){ const n = prompt('Folder name:', f.name); if(n){ f.name = n; saveFolders(); renderHome(); } }
+        else if(a === 'delfolder'){ State.folders = State.folders.filter(x => x.id !== f.id); saveFolders(); renderHome(); toast('Folder deleted'); }
+      };
+    });
+  } else {
+    sheet.innerHTML = `
+      <div class="lp-title">
+        <div class="li"><svg viewBox="0 0 24 24">${app.svg}</svg></div>
+        <div><div class="ln">${app.label}</div><div class="ls">${app.system ? 'System app' : 'User app'}</div></div>
+      </div>
+      <div class="lp-action" data-a="open"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M21 15v4a2 2 0 01-2 2h-4M3 15v4a2 2 0 002 2h4"/></svg>Open</div>
+      <div class="lp-action" data-a="info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>App info</div>
+      ${!app.system ? '<div class="lp-action" data-a="uninstall"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Uninstall</div>' : ''}
+      ${!app.system ? '<div class="lp-action" data-a="newfolder"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M12 11v6M9 14h6"/></svg>Add to new folder</div>' : ''}
+      <div class="lp-action" data-a="crash"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>Simulate crash</div>
+    `;
+    sheet.querySelectorAll('.lp-action').forEach(b => {
+      b.onclick = () => {
+        const a = b.dataset.a;
+        hideLpMenu();
+        if(a === 'open') openApp(app.id);
+        else if(a === 'info') openApp('settings', 'appinfo:' + app.id);
+        else if(a === 'newfolder'){ const n = prompt('Folder name:', 'New folder'); if(n){ State.folders.push({ id: 'f' + Date.now(), name: n, apps: [app.id] }); saveFolders(); renderHome(); toast('Folder created'); } }
+        else if(a === 'uninstall'){ State.hiddenApps.push(app.id); Storage.set('hidden', State.hiddenApps); renderHome(); toast(app.label + ' uninstalled'); }
+        else if(a === 'crash'){ openApp(app.id); setTimeout(() => { simulateCrash(app.label); navBack(); }, 400); }
+      };
+    });
+  }
+  $('#lpMenu').classList.add('on');
+}
+function hideLpMenu(){ $('#lpMenu').classList.remove('on'); }
+$('#lpMenu').onclick = e => { if(e.target.id === 'lpMenu') hideLpMenu(); };
+function saveFolders(){ Storage.set('folders', State.folders); }
+
+/* =========================================================
+   FOLDER
+   ========================================================= */
+function openFolder(id){
+  const f = State.folders.find(x => x.id === id);
+  if(!f) return;
+  State.currentApp = 'folder';
+  $('#appTitle').textContent = f.name;
+  const body = $('#appBody');
+  body.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'apps-grid';
+  f.apps.forEach(aid => {
+    const app = APPS.find(x => x.id === aid);
+    if(!app) return;
+    const el = document.createElement('div');
+    el.className = 'app';
+    el.innerHTML = '<div class="ic"><svg viewBox="0 0 24 24">' + app.svg + '</svg></div><div class="lb">' + app.label + '</div>';
+    el.onclick = () => { haptic(10); openApp(app.id); };
+    grid.appendChild(el);
+  });
+  body.appendChild(grid);
+  show('app');
+}
+
+/* =========================================================
+   TASKBAR
+   ========================================================= */
+function renderTaskbar(){
+  const tb = $('#tbApps');
+  tb.innerHTML = '';
+  if(State.runningApps.length === 0){
+    tb.innerHTML = '<div class="tb-empty">No recent apps</div>';
+  } else {
+    State.runningApps.slice(0, 8).forEach(id => {
+      const app = APPS.find(a => a.id === id);
+      if(!app) return;
+      const el = document.createElement('div');
+      el.className = 'tb-app' + (State.currentApp === id ? ' active' : '');
+      el.innerHTML = '<svg viewBox="0 0 24 24">' + app.svg + '</svg>';
+      el.onclick = () => { haptic(10); openApp(id); };
+      tb.appendChild(el);
+    });
+  }
+}
+$('#tbHome').onclick = () => { haptic(12); State.currentApp = null; show('home'); renderHome(); };
+$('#tbRecents').onclick = () => { haptic(12); openRecents(); };
+$('#tbDrawer').onclick = () => { haptic(12); openDrawer(); };
+
+/* =========================================================
+   APP DRAWER
+   ========================================================= */
+function openDrawer(){
+  renderDrawer('');
+  $('#drawer').classList.add('open');
+  setTimeout(() => $('#drawerInput').focus(), 200);
+}
+function closeDrawer(){
+  $('#drawer').classList.remove('open');
+  $('#drawerInput').value = '';
+  KB.close();
+}
+$('#drawerClose').onclick = closeDrawer;
+$('#drawerInput').addEventListener('input', e => renderDrawer(e.target.value));
+function renderDrawer(q){
+  const grid = $('#drawerGrid');
+  grid.innerHTML = '';
+  const query = (q || '').trim().toLowerCase();
+  APPS.filter(a => !query || a.label.toLowerCase().includes(query)).forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'app';
+    el.innerHTML = '<div class="ic"><svg viewBox="0 0 24 24">' + app.svg + '</svg></div><div class="lb">' + app.label + '</div>';
+    el.onclick = () => { haptic(10); closeDrawer(); openApp(app.id); };
+    attachLongPress(el, app);
+    grid.appendChild(el);
+  });
+}
+
+/* =========================================================
+   RECENTS
+   ========================================================= */
+function openRecents(){
+  const grid = $('#recentsGrid');
+  grid.innerHTML = '';
+  if(State.runningApps.length === 0){
+    grid.innerHTML = '<div class="recents-empty" style="grid-column:span 2">No recent apps</div>';
+  } else {
+    State.runningApps.slice().reverse().forEach(id => {
+      const app = APPS.find(a => a.id === id);
+      if(!app) return;
+      const card = document.createElement('div');
+      card.className = 'recent-card';
+      card.innerHTML = `
+        <div class="rc-head">
+          <div class="rc-ico"><svg viewBox="0 0 24 24">${app.svg}</svg></div>
+          <div class="rc-name">${app.label}</div>
+        </div>
+        <div class="rc-prev">Preview</div>
+        <div class="rc-close" data-i="${id}">✕</div>
+      `;
+      card.onclick = e => {
+        if(e.target.classList.contains('rc-close')) return;
+        haptic(10);
+        $('#recents').classList.remove('open');
+        openApp(id);
+      };
+      card.querySelector('.rc-close').onclick = e => {
+        e.stopPropagation();
+        haptic(15);
+        State.runningApps = State.runningApps.filter(x => x !== id);
+        Storage.set('running', State.runningApps);
+        renderTaskbar();
+        openRecents();
+      };
+      grid.appendChild(card);
+    });
+  }
+  $('#recents').classList.add('open');
+}
+$('#clearAllRecents').onclick = () => {
+  haptic(15);
+  State.runningApps = [];
+  Storage.set('running', []);
+  renderTaskbar();
+  openRecents();
+  toast('Recents cleared');
+};
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+$('#homeSearch').onclick = () => { haptic(10); openSearch(); };
+function openSearch(){
+  $('#search').classList.add('open');
+  setTimeout(() => $('#searchInput').focus(), 200);
+  renderSearch('');
+}
+$('#searchClose').onclick = () => { $('#search').classList.remove('open'); $('#searchInput').value = ''; };
+$('#searchInput').addEventListener('input', e => renderSearch(e.target.value));
+function renderSearch(q){
+  const out = $('#searchResults');
+  out.innerHTML = '';
+  const query = q.trim().toLowerCase();
+  const results = [];
+  if(!query){ APPS.forEach(a => results.push({ type:'app', data:a })); }
+  else {
+    APPS.forEach(a => { if(a.label.toLowerCase().includes(query)) results.push({ type:'app', data:a }); });
+    const shortcuts = [
+      { label:'Theme', target:'theme' },{ label:'Wallpaper', target:'wallpaper' },
+      { label:'Display', target:'display' },{ label:'Device Care', target:'care' },
+      { label:'Battery', target:'batdetail' },{ label:'Task Manager', target:'taskmgr' },
+      { label:'Permissions', target:'permissions' },{ label:'Notification log', target:'notiflog' },
+      { label:'Security', target:'security' },{ label:'Keyboard', target:'keyboard' },
+      { label:'Storage', target:'storage' },{ label:'Font', target:'font' },
+      { label:'About', target:'about' }
+    ];
+    shortcuts.forEach(s => { if(s.label.toLowerCase().includes(query)) results.push({ type:'setting', data:s }); });
+  }
+  if(results.length === 0){ out.innerHTML = '<div class="search-empty">No results for "' + q + '"</div>'; return; }
+  results.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'search-res';
+    if(r.type === 'app'){
+      el.innerHTML = '<div class="si"><svg viewBox="0 0 24 24">' + r.data.svg + '</svg></div><div><div class="sn">' + r.data.label + '</div><div class="sd">App</div></div>';
+      el.onclick = () => { haptic(10); $('#search').classList.remove('open'); $('#searchInput').value = ''; openApp(r.data.id); };
+    } else {
+      el.innerHTML = '<div class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></div><div><div class="sn">' + r.data.label + '</div><div class="sd">Settings</div></div>';
+      el.onclick = () => {
+        haptic(10);
+        $('#search').classList.remove('open'); $('#searchInput').value = '';
+        openApp('settings');
+        setTimeout(() => { State.settingsView = r.data.target; renderSettings($('#appBody')); }, 100);
+      };
+    }
+    out.appendChild(el);
+  });
+}
+
+/* =========================================================
+   QP
+   ========================================================= */
+(function(){
+  const home = $('#home');
+  let sx = 0, sy = 0, tracking = false;
+  function start(x, y){ sx = x; sy = y; tracking = true; }
+  function end(x, y){
+    if(!tracking) return; tracking = false;
+    const dx = x - sx, dy = y - sy;
+    if(Math.abs(dy) > Math.abs(dx) && sy < 90 && dy > 60) openQP();
+  }
+  home.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+  home.addEventListener('touchend', e => end(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+  home.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+  home.addEventListener('mouseup', e => end(e.clientX, e.clientY));
+})();
+function openQP(){ $('#qp').classList.add('open'); }
+function closeQP(){ $('#qp').classList.remove('open'); }
+$('#qpClose').onclick = closeQP;
+let qpStartY = null;
+$('#qp').addEventListener('touchstart', e => qpStartY = e.touches[0].clientY, {passive:true});
+$('#qp').addEventListener('touchend', e => {
+  if(qpStartY !== null && qpStartY - e.changedTouches[0].clientY > 60) closeQP();
+  qpStartY = null;
+});
+$$('#qpModes .qp-mode').forEach(m => {
+  m.onclick = () => {
+    haptic(15);
+    State.mode = m.dataset.m;
+    Storage.set('mode', State.mode);
+    applyMode();
+    toast('Mode: ' + State.mode);
+  };
+});
+$$('.qp-btn').forEach(b => {
+  b.onclick = () => {
+    haptic(12);
+    const t = b.dataset.t;
+    if(t === 'torch'){ toggleTorch(); b.classList.toggle('on', State.torch); }
+    else if(t === 'bluetooth'){ State.bluetooth = !State.bluetooth; b.classList.toggle('on', State.bluetooth); toast('Bluetooth ' + (State.bluetooth ? 'on' : 'off')); }
+    else if(t === 'dnd'){ State.dnd = !State.dnd; b.classList.toggle('on', State.dnd); toast('DND ' + (State.dnd ? 'on' : 'off')); }
+    else if(t === 'charge'){ setCharging(!State.charging); b.classList.toggle('on', State.charging); }
+    else if(t === 'rotate'){ State.autoRotate = !State.autoRotate; b.classList.toggle('on', State.autoRotate); Storage.set('rotate', State.autoRotate); applyRotation(); toast('Auto-rotate ' + (State.autoRotate ? 'on' : 'off')); }
+    else if(t === 'batsaver'){ State.batsaver = !State.batsaver; b.classList.toggle('on', State.batsaver); toast('Battery saver ' + (State.batsaver ? 'on' : 'off')); }
+    else if(t === 'focus'){ State.focus = !State.focus; b.classList.toggle('on', State.focus); toast('Focus ' + (State.focus ? 'on' : 'off')); }
+    else if(t === 'night'){ State.night = !State.night; b.classList.toggle('on', State.night); State.brightness = State.night ? 40 : 100; applyBrightnessOverlay(); $('#qpBright').value = State.brightness; toast('Night mode ' + (State.night ? 'on' : 'off')); }
+    else if(t === 'screenshot'){ takeScreenshot(); closeQP(); }
+    else if(t === 'record'){ toggleScreenRecord(); b.classList.toggle('on', State.recording); }
+    else if(t === 'installer'){ closeQP(); openApp('installer'); }
+    else if(t === 'settings'){ closeQP(); openApp('settings'); }
+  };
+});
+$('#qpBright').oninput = e => { State.brightness = +e.target.value; applyBrightnessOverlay(); };
+$('#qpMedia').oninput = e => { State.volMedia = +e.target.value; Storage.set('vmedia', State.volMedia); };
+$('#qpRing').oninput = e => { State.volRing = +e.target.value; Storage.set('vring', State.volRing); };
+$('#qpAlarm').oninput = e => { State.volAlarm = +e.target.value; Storage.set('valarm', State.volAlarm); };
+$('#qpSystem').oninput = e => { State.volSystem = +e.target.value; Storage.set('vsystem', State.volSystem); };
+
+/* =========================================================
+   ROTATION
+   ========================================================= */
+function applyRotation(){
+  const mq = window.matchMedia('(orientation: landscape)');
+  function check(){
+    const el = $('#screen');
+    if(State.autoRotate && mq.matches && window.innerHeight < 500){
+      el.style.transform = 'rotate(90deg)';
+      el.style.transformOrigin = 'center';
+      el.style.width = window.innerHeight + 'px';
+      el.style.height = window.innerWidth + 'px';
+      el.style.position = 'absolute';
+      el.style.left = '50%'; el.style.top = '50%';
+      el.style.marginLeft = (-window.innerHeight/2) + 'px';
+      el.style.marginTop = (-window.innerWidth/2) + 'px';
+    } else {
+      el.style.transform = ''; el.style.width = ''; el.style.height = '';
+      el.style.position = ''; el.style.left = ''; el.style.top = '';
+      el.style.marginLeft = ''; el.style.marginTop = '';
+    }
+  }
+  check();
+  window.addEventListener('orientationchange', () => setTimeout(check, 200));
+  window.addEventListener('resize', check);
+}
+applyRotation();
+
+/* =========================================================
+   APP VIEW + ROUTER
+   ========================================================= */
+$('#appBack').onclick = () => { haptic(10); navBack(); };
+function openApp(id, subView){
+  State.currentApp = id;
+  State.settingsView = 'root';
+  const app = APPS.find(a => a.id === id);
+  if(!app) return;
+  State.runningApps = State.runningApps.filter(x => x !== id);
+  State.runningApps.push(id);
+  if(State.runningApps.length > 10) State.runningApps.shift();
+  Storage.set('running', State.runningApps);
+  renderTaskbar();
+  $('#appTitle').textContent = app.label;
+  $('#appActions').innerHTML = '';
+  const body = $('#appBody');
+  body.innerHTML = '';
+  body.style.padding = '';
+  // hide keyboard
+  KB.close();
+  if(id === 'camera'){ renderCamera(); return; }
+  const r = {
+    calculator: renderCalc, gallery: renderGallery, files: renderFiles, notes: renderNotes,
+    calendar: renderCalendar, recorder: renderRecorder, settings: renderSettings,
+    music: renderMusic, torch: renderTorch, trash: renderTrash, alarm: renderAlarm,
+    installer: renderInstaller
+  };
+  if(subView){ State.settingsView = subView; }
+  r[id] && r[id](body);
+  show('app');
+  if(id !== 'camera' && id !== 'installer'){
+    // add share/info action in header
+    const sh = document.createElement('div');
+    sh.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5"/></svg>';
+    sh.style.cssText = 'cursor:pointer;padding:8px;';
+    sh.onclick = () => { haptic(10); openShareSheet('Opening from ' + app.label); };
+    $('#appActions').appendChild(sh);
+  }
+}
+function navBack(){
+  if(State.currentApp === 'settings' && State.settingsView !== 'root'){
+    State.settingsView = 'root'; renderSettings($('#appBody')); return;
+  }
+  State.currentApp = null; show('home'); renderHome();
+  KB.close();
+}
+
+/* =========================================================
+   MUSIC
+   ========================================================= */
+const MUSIC_TRACKS = [
+  { t:'Midnight Drive', a:'Neon Fields', d:214 },
+  { t:'Silent Waves',   a:'Ocean Layer', d:248 },
+  { t:'Paper Planes',   a:'Emily Hart',  d:196 },
+  { t:'Night Circuit',  a:'Volt Machine',d:232 },
+  { t:'Golden Hour',    a:'Sunset Theory',d:205 },
+  { t:'Echo Chamber',   a:'Depth',       d:271 },
+  { t:'Slow Motion',    a:'Pale Blue',   d:189 }
+];
+function fmtTime(s){ s = Math.max(0, Math.floor(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+function renderMusic(body){
+  const tr = MUSIC_TRACKS[State.musicIdx];
+  const pct = (State.musicProgress / tr.d) * 100;
+  body.innerHTML = `
+    <div style="padding:8px 8px 24px;text-align:center;">
+      <div style="width:220px;height:220px;margin:0 auto 22px;border-radius:24px;position:relative;overflow:hidden;background:linear-gradient(140deg,#1c2b24 0%,#0d1814 60%,#000 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 40px -15px rgba(0,0,0,.7);">
+        <svg viewBox="0 0 24 24" style="width:70px;height:70px;stroke:var(--accent);fill:none;stroke-width:1.4;opacity:.65;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <div style="font-size:22px;font-weight:700;margin-bottom:4px;" id="muT">${tr.t}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:26px;" id="muA">${tr.a}</div>
+      <div class="mu-prog" id="muProg" style="height:4px;background:rgba(128,128,128,.2);border-radius:2px;margin:0 8px 6px;position:relative;cursor:pointer;overflow:hidden;"><div class="fill" id="muFill" style="height:100%;background:var(--accent);border-radius:2px;width:${pct}%;transition:width .3s linear;"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding:0 8px;margin-bottom:22px;font-variant-numeric:tabular-nums;"><span id="muCur">${fmtTime(State.musicProgress)}</span><span>${fmtTime(tr.d)}</span></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:32px;margin-bottom:28px;">
+        <button class="mu-btn" id="muPrev" style="width:48px;height:48px;border:none;background:transparent;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:var(--fg);"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg></button>
+        <button class="mu-btn play" id="muPlay" style="width:70px;height:70px;border-radius:50%;border:none;background:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px -6px rgba(52,229,138,.5);">${State.musicPlaying ? '<svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:var(--bg);"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>' : '<svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:var(--bg);"><path d="M6 4v16l14-8z"/></svg>'}</button>
+        <button class="mu-btn" id="muNext" style="width:48px;height:48px;border:none;background:transparent;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:26px;height:26px;fill:var(--fg);"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg></button>
+      </div>
+    </div>
+    <div style="font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 8px 10px;font-weight:600;">Up Next</div>
+    <div id="muList"></div>
+  `;
+  const list = $('#muList');
+  MUSIC_TRACKS.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:11px 8px;border-radius:12px;cursor:pointer;' + (i === State.musicIdx ? 'background:rgba(52,229,138,.08);' : '');
+    row.innerHTML = '<div style="width:20px;font-size:11px;color:' + (i === State.musicIdx ? 'var(--accent)' : 'var(--muted)') + ';text-align:center;">' + (i === State.musicIdx ? '▸' : (i+1)) + '</div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">' + t.t + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">' + t.a + '</div></div><div style="font-size:11px;color:var(--muted);">' + fmtTime(t.d) + '</div>';
+    row.onclick = () => { haptic(10); State.musicIdx = i; State.musicProgress = 0; renderMusic(body); if(State.musicPlaying) startMusicTimer(); };
+    list.appendChild(row);
+  });
+  $('#muPlay').onclick = () => {
+    haptic(15);
+    State.musicPlaying = !State.musicPlaying;
+    if(State.musicPlaying) startMusicTimer(); else stopMusicTimer();
+    renderMusic(body);
+    renderWidgets();
+  };
+  $('#muPrev').onclick = () => { haptic(10); State.musicIdx = (State.musicIdx - 1 + MUSIC_TRACKS.length) % MUSIC_TRACKS.length; State.musicProgress = 0; renderMusic(body); renderWidgets(); };
+  $('#muNext').onclick = () => { haptic(10); State.musicIdx = (State.musicIdx + 1) % MUSIC_TRACKS.length; State.musicProgress = 0; renderMusic(body); renderWidgets(); };
+  $('#muProg').onclick = e => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const p = (e.clientX - rect.left) / rect.width;
+    State.musicProgress = Math.floor(p * tr.d);
+    renderMusic(body);
+  };
+}
+function startMusicTimer(){
+  stopMusicTimer();
+  State.musicTimer = setInterval(() => {
+    if(!State.musicPlaying) return;
+    State.musicProgress++;
+    const tr = MUSIC_TRACKS[State.musicIdx];
+    if(State.musicProgress >= tr.d){ State.musicIdx = (State.musicIdx + 1) % MUSIC_TRACKS.length; State.musicProgress = 0; if(State.currentApp === 'music') renderMusic($('#appBody')); }
+    if(State.currentApp === 'music'){ const f = $('#muFill'), c = $('#muCur'); if(f) f.style.width = (State.musicProgress / tr.d * 100) + '%'; if(c) c.textContent = fmtTime(State.musicProgress); }
+    if($('#home').classList.contains('active')) renderWidgets();
+  }, 1000);
+}
+function stopMusicTimer(){ if(State.musicTimer){ clearInterval(State.musicTimer); State.musicTimer = null; } }
+
+/* =========================================================
+   CALC
+   ========================================================= */
+function renderCalc(body){
+  let cur = '0', prev = null, op = null, reset = false;
+  const disp = document.createElement('div');
+  disp.style.cssText = 'text-align:right;font-size:48px;font-weight:200;letter-spacing:-1.5px;padding:40px 8px 20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;';
+  disp.textContent = '0';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:0 4px;';
+  [['AC','op'],['±','op'],['%','op'],['÷','op'],['7',''],['8',''],['9',''],['×','op'],['4',''],['5',''],['6',''],['−','op'],['1',''],['2',''],['3',''],['+','op'],['0','zero'],['.',''],['=','eq']].forEach(([k, cls]) => {
+    const b = document.createElement('div');
+    const isOp = cls.includes('op'); const isEq = cls === 'eq'; const isZero = cls.includes('zero');
+    b.style.cssText = 'height:66px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;color:' + (isEq ? 'var(--bg)' : isOp ? 'var(--accent)' : 'var(--fg)') + ';background:' + (isEq ? 'var(--accent)' : isOp ? 'rgba(52,229,138,.1)' : 'var(--surface)') + ';' + (isZero ? 'grid-column:span 2;border-radius:33px;' : 'border-radius:50%;');
+    b.textContent = k;
+    b.onclick = () => {
+      haptic(8);
+      if(k === 'AC'){ cur='0'; prev=null; op=null; reset=false; }
+      else if(k === '±'){ cur = cur.startsWith('-') ? cur.slice(1) : '-'+cur; }
+      else if(k === '%'){ cur = String(parseFloat(cur)/100); }
+      else if('÷×−+'.includes(k)){ prev = parseFloat(cur); op = k; reset = true; }
+      else if(k === '='){ if(op && prev !== null){ const b2 = parseFloat(cur); let r = 0; if(op === '+') r = prev + b2; if(op === '−') r = prev - b2; if(op === '×') r = prev * b2; if(op === '÷') r = prev / b2; cur = String(Math.round(r * 1e10) / 1e10); prev = null; op = null; reset = true; } }
+      else if(k === '.'){ if(!cur.includes('.')) cur += '.'; }
+      else { if(reset){ cur = k; reset = false; } else cur = cur === '0' ? k : cur + k; }
+      disp.textContent = cur;
+    };
+    grid.appendChild(b);
+  });
+  body.appendChild(disp); body.appendChild(grid);
+}
+
+/* =========================================================
+   CAMERA — requires permission
+   ========================================================= */
+function renderCamera(){
+  requestPermission('camera', 'camera', granted => {
+    if(!granted){ toast('Camera permission denied'); navBack(); return; }
+    const body = $('#appBody'); body.innerHTML = ''; body.style.padding = '0';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:#000;display:flex;flex-direction:column;justify-content:flex-end;';
+    wrap.innerHTML = '<div id="cv" style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 25% 30%,rgba(90,130,100,.4),transparent 55%),radial-gradient(circle at 75% 70%,rgba(70,90,140,.35),transparent 55%),linear-gradient(160deg,#0a1410,#020504);transition:opacity .12s;"></div><div style="position:relative;z-index:20;padding:20px 0 40px;display:flex;align-items:center;justify-content:space-around;"><div style="width:50px;height:50px;border-radius:14px;background:rgba(255,255,255,.1);"></div><div id="shut" style="width:78px;height:78px;border-radius:50%;border:4px solid rgba(255,255,255,.95);background:rgba(255,255,255,.18);cursor:pointer;"></div><div style="width:50px;height:50px;border-radius:14px;background:rgba(255,255,255,.1);"></div></div>';
+    body.appendChild(wrap);
+    $('#shut').onclick = () => {
+      haptic(25);
+      const cv = $('#cv');
+      cv.style.opacity = '0.3';
+      setTimeout(() => cv.style.opacity = '1', 100);
+      toast('Photo captured');
+    };
+    show('app');
+    Bus.emit('camera.opened');
+    $('#stCam').style.display = 'block';
+    // إخفاء المؤشر عند الخروج
+    setTimeout(() => { if(State.currentApp !== 'camera') $('#stCam').style.display = 'none'; }, 100);
+  });
+}
+
+/* =========================================================
+   GALLERY
+   ========================================================= */
+function renderGallery(body){
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;';
+  [['#1a3a2a','#00e676'],['#3a1a1a','#ff2b4a'],['#1a1a3a','#5b6bff'],['#3a2a1a','#ffb347'],['#2a1a3a','#b366ff'],['#1a3a3a','#00d4d4'],['#3a3a1a','#e6ff2b'],['#1a1a1a','#555555'],['#3a1a2a','#ff66aa']].forEach(([c1, c2]) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'aspect-ratio:1;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,' + c1 + ',' + c2 + ');transition:transform .12s;position:relative;';
+    d.onclick = () => { haptic(10); toast('Photo preview'); };
+    attachFileLongPress(d, 'photo.jpg');
+    grid.appendChild(d);
+  });
+  body.appendChild(grid);
+}
+function attachFileLongPress(el, name){
+  let t = null;
+  const start = () => { t = setTimeout(() => { haptic(30); showFileMenu(name); }, 500); };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchend', () => clearTimeout(t));
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', () => clearTimeout(t));
+  el.addEventListener('mouseleave', () => clearTimeout(t));
+}
+function showFileMenu(name){
+  const sheet = $('#lpSheet');
+  sheet.innerHTML = `
+    <div class="lp-title">
+      <div class="li"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg></div>
+      <div><div class="ln">${name}</div><div class="ls">File</div></div>
+    </div>
+    <div class="lp-action" data-a="open"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M21 15v4a2 2 0 01-2 2h-4M3 15v4a2 2 0 002 2h4"/></svg>Open</div>
+    <div class="lp-action" data-a="share"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg>Share</div>
+    <div class="lp-action" data-a="rename"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Rename</div>
+    <div class="lp-action danger" data-a="delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</div>
+  `;
+  sheet.querySelectorAll('.lp-action').forEach(b => {
+    b.onclick = () => {
+      const a = b.dataset.a;
+      hideLpMenu();
+      if(a === 'open') toast('Opening ' + name);
+      else if(a === 'share') openShareSheet('File: ' + name);
+      else if(a === 'rename'){ const n = prompt('New name:', name); if(n) toast('Renamed to ' + n); }
+      else if(a === 'delete') toast(name + ' moved to Trash');
+    };
+  });
+  $('#lpMenu').classList.add('on');
+}
+
+/* =========================================================
+   FILES — breadcrumb + multi-select
+   ========================================================= */
+const FileState = { path: ['Home'], items: [
+  { n:'Downloads', s:'Folder · 12 items', t:'folder' },
+  { n:'Pictures', s:'Folder · 48 items', t:'folder' },
+  { n:'Music', s:'Folder · 27 items', t:'folder' },
+  { n:'Documents', s:'Folder · 6 items', t:'folder' },
+  { n:'notes.txt', s:'2 KB', t:'file' },
+  { n:'game.apk', s:'48 MB · tap to install', t:'file' },
+  { n:'photo.jpg', s:'1.2 MB', t:'file' }
+], selected: new Set() };
+function renderFiles(body){
+  body.innerHTML = '';
+  // breadcrumbs
+  const bc = document.createElement('div');
+  bc.style.cssText = 'display:flex;align-items:center;gap:6px;padding:10px 4px;font-size:12px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap;';
+  FileState.path.forEach((p, i) => {
+    const b = document.createElement('span');
+    b.textContent = p;
+    b.style.cssText = 'cursor:pointer;padding:4px 8px;border-radius:8px;' + (i === FileState.path.length-1 ? 'color:var(--fg);font-weight:600;background:var(--surface);' : '');
+    if(i < FileState.path.length - 1){
+      b.onclick = () => { FileState.path = FileState.path.slice(0, i+1); renderFiles(body); };
+    }
+    bc.appendChild(b);
+    if(i < FileState.path.length - 1){
+      const sep = document.createElement('span'); sep.textContent = '›'; sep.style.opacity = '.4';
+      bc.appendChild(sep);
+    }
+  });
+  body.appendChild(bc);
+
+  // select-all bar
+  const bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 12px;border-bottom:1px solid var(--border);margin-bottom:6px;';
+  bar.innerHTML = `<span style="font-size:11.5px;color:var(--muted);">${FileState.items.length} items · ${FileState.selected.size} selected</span>`;
+  const selAll = document.createElement('span');
+  selAll.style.cssText = 'font-size:11.5px;color:var(--accent);font-weight:600;cursor:pointer;';
+  selAll.textContent = FileState.selected.size === FileState.items.length ? 'Deselect all' : 'Select all';
+  selAll.onclick = () => {
+    haptic(10);
+    if(FileState.selected.size === FileState.items.length) FileState.selected.clear();
+    else FileState.items.forEach(it => FileState.selected.add(it.n));
+    renderFiles(body);
+  };
+  bar.appendChild(selAll);
+  body.appendChild(bar);
+
+  FileState.items.forEach(f => {
+    const row = document.createElement('div');
+    const sel = FileState.selected.has(f.n);
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--border);cursor:pointer;' + (sel ? 'background:rgba(52,229,138,.06);' : '');
+    const icon = f.t === 'folder' ? '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>' : '<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/>';
+    row.innerHTML = (sel ? '<div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--bg);fill:none;stroke-width:3;"><path d="M5 12l5 5L20 7"/></svg></div>' : '') + '<div style="width:40px;height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.8;">' + icon + '</svg></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;">' + f.n + '</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">' + f.s + '</div></div>';
+    row.onclick = () => {
+      haptic(10);
+      if(f.t === 'folder'){ FileState.path.push(f.n); renderFiles(body); }
+      else if(f.n.endsWith('.apk')){ openApp('installer'); }
+      else toast('Opening ' + f.n);
+    };
+    attachFileLongPress(row, f.n);
+    body.appendChild(row);
+  });
+}
+
+/* =========================================================
+   NOTES — with keyboard support
+   ========================================================= */
+function renderNotes(body){
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'width:100%;min-height:140px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;color:var(--fg);font-size:14px;font-family:inherit;resize:vertical;outline:none;line-height:1.6;';
+  ta.placeholder = 'Write something…';
+  ta.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    showModal(`
+      <h3>Text actions</h3>
+      <button class="modal-btn primary" id="pasteBtn">Paste</button>
+      <button class="modal-btn ghost" onclick="hideModal()">Cancel</button>
+    `);
+    $('#pasteBtn').onclick = () => { pasteFromClipboard(ta); hideModal(); };
+  });
+  const btn = document.createElement('button');
+  btn.style.cssText = 'margin-top:12px;padding:12px 22px;background:var(--accent);color:var(--bg);border:none;border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;';
+  btn.textContent = 'Save note';
+  const list = document.createElement('div');
+  list.style.marginTop = '22px';
+  const load = () => {
+    list.innerHTML = '';
+    const notes = Storage.get('notes', []);
+    notes.slice().reverse().forEach((n, idx) => {
+      const d = document.createElement('div');
+      d.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 70px 14px 14px;margin-top:10px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;position:relative;';
+      d.innerHTML = '<div style="position:absolute;top:8px;right:10px;display:flex;gap:4px;"><span class="copy" style="font-size:10px;color:var(--accent);cursor:pointer;padding:4px 8px;border-radius:6px;">Copy</span><span class="del" data-i="' + (notes.length - 1 - idx) + '" style="font-size:10px;color:var(--danger);cursor:pointer;padding:4px 8px;border-radius:6px;">Delete</span></div>' + n;
+      list.appendChild(d);
+    });
+    list.querySelectorAll('.del').forEach(el => {
+      el.onclick = () => { haptic(15); const notes = Storage.get('notes', []); notes.splice(+el.dataset.i, 1); Storage.set('notes', notes); load(); };
+    });
+    list.querySelectorAll('.copy').forEach(el => {
+      el.onclick = () => {
+        const txt = el.parentElement.parentElement.textContent.replace('Copy','').replace('Delete','').trim();
+        copyToClipboard(txt);
+      };
+    });
+  };
+  btn.onclick = () => { if(!ta.value.trim()) return; haptic(15); const notes = Storage.get('notes', []); notes.push(ta.value.trim()); Storage.set('notes', notes); ta.value = ''; load(); toast('Note saved'); };
+  body.appendChild(ta); body.appendChild(btn); body.appendChild(list); load();
+}
+
+/* =========================================================
+   RECORDER
+   ========================================================= */
+function renderRecorder(body){
+  let sec = 0, timer = null, rec = false;
+  body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:40px 0;"><div id="rT" style="font-size:56px;font-weight:200;letter-spacing:2px;font-variant-numeric:tabular-nums;margin-bottom:14px;">00:00</div><div id="rP" style="display:none;width:14px;height:14px;border-radius:50%;background:var(--accent);margin-bottom:20px;animation:pulse 1s infinite;"></div><button id="rB" style="width:88px;height:88px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px -8px rgba(52,229,138,.5);"><svg viewBox="0 0 24 24" style="width:34px;height:34px;fill:var(--bg);"><circle cx="12" cy="12" r="7"/></svg></button><div id="rS" style="font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:22px;font-weight:600;">Ready</div></div>';
+  $('#rB').onclick = () => {
+    haptic(20);
+    rec = !rec;
+    if(rec){
+      requestPermission('recorder', 'microphone', granted => {
+        if(!granted){ rec = false; toast('Microphone denied'); return; }
+        timer = setInterval(() => { sec++; $('#rT').textContent = String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0'); }, 1000);
+        $('#rP').style.display = 'block'; $('#rS').textContent = 'Recording';
+        $('#rB').innerHTML = '<svg viewBox="0 0 24 24" style="width:34px;height:34px;fill:var(--bg);"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
+        $('#stMic').style.display = 'block';
+      });
+    } else {
+      clearInterval(timer); $('#rP').style.display = 'none'; $('#rS').textContent = 'Saved';
+      $('#rB').innerHTML = '<svg viewBox="0 0 24 24" style="width:34px;height:34px;fill:var(--bg);"><circle cx="12" cy="12" r="7"/></svg>';
+      $('#stMic').style.display = 'none';
+      setTimeout(() => { sec = 0; $('#rT').textContent = '00:00'; $('#rS').textContent = 'Ready'; }, 1400);
+    }
+  };
+}
+
+/* =========================================================
+   CALENDAR
+   ========================================================= */
+let calM = new Date().getMonth(), calY = new Date().getFullYear();
+function renderCalendar(body){
+  body.innerHTML = '';
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;';
+  head.innerHTML = '<div id="cP" style="width:36px;height:36px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">‹</div><div id="cM" style="font-size:18px;font-weight:600;"></div><div id="cN" style="width:36px;height:36px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">›</div>';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:6px;';
+  const draw = () => {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    $('#cM').textContent = months[calM] + ' ' + calY;
+    grid.innerHTML = '';
+    ['S','M','T','W','T','F','S'].forEach(d => { const el = document.createElement('div'); el.style.cssText = 'font-size:10.5px;color:var(--muted);text-align:center;padding:8px 0;font-weight:600;'; el.textContent = d; grid.appendChild(el); });
+    const first = new Date(calY, calM, 1).getDay(), days = new Date(calY, calM+1, 0).getDate(), today = new Date();
+    for(let i=0;i<first;i++){ const el = document.createElement('div'); grid.appendChild(el); }
+    for(let d=1;d<=days;d++){
+      const el = document.createElement('div');
+      el.style.cssText = 'aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13.5px;';
+      if(d === today.getDate() && calM === today.getMonth() && calY === today.getFullYear()) el.style.cssText += 'background:var(--accent);color:var(--bg);font-weight:700;';
+      el.textContent = d; grid.appendChild(el);
+    }
+  };
+  body.appendChild(head); body.appendChild(grid); draw();
+  $('#cP').onclick = () => { haptic(8); calM--; if(calM<0){ calM=11; calY--; } draw(); };
+  $('#cN').onclick = () => { haptic(8); calM++; if(calM>11){ calM=0; calY++; } draw(); };
+}
+
+/* =========================================================
+   TORCH
+   ========================================================= */
+function renderTorch(body){
+  body.innerHTML = '<div style="text-align:center;padding-top:30px;"><div id="tb" style="width:150px;height:150px;border-radius:50%;margin:0 auto 26px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;border:1px solid var(--border);' + (State.torch ? 'background:var(--accent);box-shadow:0 0 50px rgba(52,229,138,.35);' : '') + '"><svg viewBox="0 0 24 24" style="width:60px;height:60px;stroke:' + (State.torch ? 'var(--bg)' : 'var(--fg)') + ';fill:none;stroke-width:1.6;"><path d="M9 2h6l-1 5h-4L9 2z"/><path d="M10 7v8a2 2 0 002 2 2 2 0 002-2V7"/><path d="M12 17v5"/></svg></div><div style="font-size:13px;color:var(--muted);" id="tl">' + (State.torch ? 'Torch is on' : 'Tap to turn on') + '</div></div>';
+  $('#tb').onclick = () => { haptic(15); toggleTorch(); renderTorch(body); };
+}
+function toggleTorch(){
+  State.torch = !State.torch;
+  $('#torchOverlay').style.opacity = State.torch ? '1' : '0';
+  $('#torchOverlay').style.pointerEvents = State.torch ? 'auto' : 'none';
+  const q = document.querySelector('.qp-btn[data-t="torch"]');
+  if(q) q.classList.toggle('on', State.torch);
+}
+$('#torchOverlay').onclick = () => toggleTorch();
+
+/* =========================================================
+   TRASH
+   ========================================================= */
+function renderTrash(body){
+  body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);"><svg viewBox="0 0 24 24" style="width:64px;height:64px;stroke:var(--muted);fill:none;stroke-width:1.4;margin-bottom:18px;opacity:.5;"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg><div style="font-size:15px;font-weight:500;color:var(--fg);margin-bottom:6px;">Trash is empty</div><div style="font-size:12.5px;line-height:1.6;">Deleted files appear here and stay for 30 days before permanent removal.</div></div>';
+}
+
+/* =========================================================
+   ALARM
+   ========================================================= */
+function renderAlarm(body){
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.style.marginBottom = '16px';
+  if(State.alarms.length === 0){
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No alarms set</div>';
+  } else {
+    State.alarms.slice().sort((a,b) => (a.h*60+a.m) - (b.h*60+b.m)).forEach(a => {
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:8px;';
+      el.innerHTML = `
+        <div>
+          <div style="font-size:28px;font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:-1px;">${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${a.label || 'Alarm'}</div>
+        </div>
+        <div class="sw" data-id="${a.id}" style="width:46px;height:26px;border-radius:14px;background:${a.on ? 'var(--accent)' : 'rgba(128,128,128,.3)'};position:relative;cursor:pointer;transition:background .2s;">
+          <span style="position:absolute;top:3px;left:${a.on ? '23px' : '3px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;display:block;"></span>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+    list.querySelectorAll('.sw').forEach(sw => {
+      sw.onclick = () => {
+        haptic(10);
+        const a = State.alarms.find(x => x.id === sw.dataset.id);
+        a.on = !a.on;
+        Storage.set('alarms', State.alarms);
+        renderAlarm(body);
+      };
+    });
+  }
+  body.appendChild(list);
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '+ Add Alarm';
+  addBtn.style.cssText = 'width:100%;padding:15px;border-radius:14px;border:1px dashed var(--border);background:transparent;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;';
+  addBtn.onclick = () => {
+    haptic(15);
+    showModal(`
+      <h3>New Alarm</h3>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <input id="alH" type="text" inputmode="numeric" placeholder="Hour" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--fg);font-size:16px;text-align:center;">
+        <input id="alM" type="text" inputmode="numeric" placeholder="Min" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--fg);font-size:16px;text-align:center;">
+      </div>
+      <input id="alL" type="text" placeholder="Label" style="width:100%;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--fg);font-size:14px;margin-bottom:12px;">
+      <button class="modal-btn primary" id="alSave">Save</button>
+      <button class="modal-btn ghost" onclick="hideModal()">Cancel</button>
+    `);
+    $('#alSave').onclick = () => {
+      const h = +$('#alH').value, m = +$('#alM').value, l = $('#alL').value || 'Alarm';
+      if(isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59){ toast('Invalid time'); return; }
+      State.alarms.push({ id: 'a' + Date.now(), h, m, on: true, label: l });
+      Storage.set('alarms', State.alarms);
+      hideModal();
+      renderAlarm(body);
+      toast('Alarm set');
+    };
+  };
+  body.appendChild(addBtn);
+}
+function checkAlarms(d){
+  State.alarms.forEach(a => {
+    if(a.on && a.h === d.getHours() && a.m === d.getMinutes() && d.getSeconds() < 2) triggerAlarm(a);
+  });
+}
+function triggerAlarm(a){
+  State.ringingAlarm = a;
+  $('#alTimeBig').textContent = String(a.h).padStart(2,'0') + ':' + String(a.m).padStart(2,'0');
+  $('#alLabelBig').textContent = a.label || 'Alarm';
+  $('#alarmRing').classList.add('on');
+  pushNotif('Alarm', a.label || 'Alarm ringing', 'alarm');
+  haptic([200,100,200,100,200]);
+}
+$('#alStop').onclick = () => { $('#alarmRing').classList.remove('on'); State.ringingAlarm = null; toast('Alarm stopped'); };
+$('#alSnooze').onclick = () => {
+  const a = State.ringingAlarm;
+  if(a){
+    const now = new Date(); const t = new Date(now.getTime() + 5*60000);
+    State.alarms.push({ id: 'a' + Date.now(), h: t.getHours(), m: t.getMinutes(), on: true, label: a.label + ' (snoozed)' });
+    Storage.set('alarms', State.alarms);
+  }
+  $('#alarmRing').classList.remove('on'); State.ringingAlarm = null;
+  toast('Snoozed for 5 minutes');
+};
+
+/* =========================================================
+   PACKAGE INSTALLER — قلب النظام
+   ========================================================= */
+const AVAILABLE_PACKAGES = [
+  { id:'games',    name:'Pixel Runner',  version:'2.1.4', size:'32 MB', author:'MC88 Studios', perms:['storage','notifications'], icon:'<path d="M4 6h16v12H4z"/><path d="M8 10h.01M16 10h.01M9 15h6"/>' },
+  { id:'social',   name:'MC Chat',       version:'1.0.9', size:'18 MB', author:'MC88 Labs',    perms:['storage','notifications','contacts'], icon:'<path d="M21 11a8 8 0 01-8 8H8l-5 3 1-5a8 8 0 017-14 8 8 0 0110 8z"/>' },
+  { id:'vpn',      name:'Local VPN',     version:'0.5.2', size:'6 MB',  author:'Anon',         perms:['notifications'], icon:'<path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/>' },
+  { id:'textedit', name:'TextEdit',      version:'3.4.1', size:'12 MB', author:'OpenSoft',     perms:['storage'], icon:'<path d="M4 6h16M4 10h16M4 14h10M4 18h10"/>' },
+  { id:'radio',    name:'FM Tuner',      version:'1.1.0', size:'9 MB',  author:'MC88',         perms:['microphone','notifications'], icon:'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/>' },
+  { id:'taskmgr',  name:'Task Manager',  version:'2.0.0', size:'5 MB',  author:'MC88',         perms:[], icon:'<path d="M4 20V10M10 20V4M16 20V14M22 20V8"/>' }
+];
+function renderInstaller(body){
+  body.innerHTML = '';
+  const note = document.createElement('div');
+  note.style.cssText = 'padding:14px 16px;background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.25);border-radius:14px;margin-bottom:16px;font-size:12px;line-height:1.55;color:var(--warn);';
+  note.innerHTML = '<b style="display:block;margin-bottom:4px;">⚠ Offline mode</b>Since this device has no network, apps must be transferred via USB or copied to <code style="color:var(--accent);">/Downloads</code>.';
+  body.appendChild(note);
+
+  const drop = document.createElement('div');
+  drop.style.cssText = 'padding:22px;border:2px dashed var(--border);border-radius:16px;text-align:center;cursor:pointer;margin-bottom:20px;';
+  drop.innerHTML = '<svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--accent);fill:none;stroke-width:1.7;margin-bottom:8px;"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 20h16"/></svg><div style="font-size:13px;font-weight:600;margin-bottom:3px;">Install from file</div><div style="font-size:11px;color:var(--muted);">Choose an APK from Downloads</div>';
+  drop.onclick = () => simulateApkInstall();
+  body.appendChild(drop);
+
+  const h = document.createElement('div');
+  h.style.cssText = 'font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-left:4px;font-weight:600;';
+  h.textContent = 'Available (pre-cached)';
+  body.appendChild(h);
+
+  AVAILABLE_PACKAGES.forEach(pkg => {
+    const installed = State.installedApps.includes(pkg.id);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:8px;';
+    row.innerHTML = `<div style="width:46px;height:46px;border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">${pkg.icon}</svg></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;">${pkg.name} <span style="font-size:10px;color:var(--muted);font-weight:400;">v${pkg.version}</span></div><div style="font-size:11px;color:var(--muted);margin-top:3px;">${pkg.author} · ${pkg.size}</div></div><button data-id="${pkg.id}" style="padding:8px 14px;border-radius:10px;background:${installed ? 'var(--card)' : 'var(--accent)'};color:${installed ? 'var(--muted)' : 'var(--bg)'};font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;">${installed ? 'Installed' : 'Install'}</button>`;
+    row.querySelector('button').onclick = () => {
+      if(installed) return;
+      haptic(20);
+      installPackage(pkg);
+    };
+    body.appendChild(row);
+  });
+}
+function simulateApkInstall(){
+  showModal(`
+    <h3>Choose a file</h3>
+    <p>Select an APK from /Downloads to install.</p>
+    <div style="background:var(--surface);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:500;">game.apk</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">48 MB · Unverified publisher</div>
+    </div>
+    <div style="background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.3);border-radius:12px;padding:12px;font-size:11.5px;color:var(--warn);margin-bottom:12px;line-height:1.5;">⚠ Unknown source. This APK has not been verified. Install at your own risk.</div>
+    <button class="modal-btn primary" id="apkInstall">Install anyway</button>
+    <button class="modal-btn ghost" onclick="hideModal()">Cancel</button>
+  `);
+  $('#apkInstall').onclick = () => { hideModal(); installPackage({ id:'game', name:'game.apk', version:'unknown', size:'48 MB', author:'Unknown', perms:['storage','camera','microphone','notifications'] }); };
+}
+function installPackage(pkg){
+  // show permission list
+  const permList = pkg.perms.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);padding:12px;background:var(--surface);border-radius:12px;text-align:center;">No permissions required</div>'
+    : pkg.perms.map(p => `<div class="perm-row"><div class="pl"><div class="pi"><svg viewBox="0 0 24 24">${PERMS[p].icon}</svg></div><div><div class="pn">${PERMS[p].n}</div></div></div></div>`).join('');
+  showModal(`
+    <h3>Install ${pkg.name}?</h3>
+    <p>Version ${pkg.version} · ${pkg.size} · ${pkg.author}</p>
+    <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:600;">Required permissions</div>
+    <div style="max-height:200px;overflow-y:auto;margin-bottom:16px;">${permList}</div>
+    <button class="modal-btn primary" id="confirmInstall">Install</button>
+    <button class="modal-btn ghost" onclick="hideModal()">Cancel</button>
+  `);
+  $('#confirmInstall').onclick = () => {
+    hideModal();
+    showInstallProgress(pkg);
+  };
+}
+function showInstallProgress(pkg){
+  const steps = ['Verifying package…', 'Extracting resources…', 'Registering activities…', 'Finalizing installation…'];
+  let i = 0;
+  showModal(`
+    <h3>Installing ${pkg.name}</h3>
+    <p id="instStep">${steps[0]}</p>
+    <div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:16px;"><div id="instBar" style="height:100%;background:var(--accent);width:0;transition:width .4s;"></div></div>
+  `);
+  const advance = () => {
+    i++;
+    const bar = $('#instBar'), st = $('#instStep');
+    if(!bar) return;
+    bar.style.width = ((i / steps.length) * 100) + '%';
+    if(i < steps.length){ st.textContent = steps[i]; setTimeout(advance, 500); }
+    else {
+      // register app
+      if(!State.installedApps.includes(pkg.id)) State.installedApps.push(pkg.id);
+      Storage.set('installed', State.installedApps);
+      // grant permissions
+      (pkg.perms || []).forEach(p => setPermState(pkg.id, p, 'granted'));
+      // add to APPS registry
+      if(!APPS.find(a => a.id === pkg.id)){
+        APPS.push({ id: pkg.id, label: pkg.name, svg: pkg.icon, system: false });
+      }
+      setTimeout(() => {
+        hideModal();
+        toast(pkg.name + ' installed');
+        pushNotif('Installer', pkg.name + ' was installed', 'app');
+        renderHome();
+      }, 400);
+    }
+  };
+  setTimeout(advance, 500);
+}
+
+/* =========================================================
+   SETTINGS — with all new sections
+   ========================================================= */
+function setRow(icon, label, val, action, danger, isSwitch, switchOn){
+  const el = document.createElement('div');
+  el.className = 'set-item';
+  if(danger) el.classList.add('danger');
+  el.innerHTML = '<div class="left"><div class="icn"><svg viewBox="0 0 24 24">' + icon + '</svg></div><div>' + label + '</div></div>' + (isSwitch ? '<div class="switch ' + (switchOn ? 'on' : '') + '"></div>' : '<div class="val">' + (val || '') + '<span class="arrow">›</span></div>');
+  el.onclick = () => { haptic(10); action && action(); };
+  return el;
+}
+function settingsBack(container){
+  const b = document.createElement('button');
+  b.style.cssText = 'margin-bottom:18px;padding:12px 22px;background:var(--accent);color:var(--bg);border:none;border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;';
+  b.textContent = '‹ Settings';
+  b.onclick = () => { haptic(10); container.innerHTML = ''; State.settingsView = 'root'; renderSettings(container); };
+  return b;
+}
+function group(title){ const g = document.createElement('div'); g.className = 'set-group'; if(title) g.innerHTML = '<h4>' + title + '</h4>'; return g; }
+
+function renderSettings(body){
+  body.innerHTML = '';
+  if(State.settingsView === 'root'){
+    const g1 = group('Appearance');
+    g1.appendChild(setRow('<circle cx="12" cy="12" r="4"/>', 'Theme', State.theme.charAt(0).toUpperCase() + State.theme.slice(1), () => { State.settingsView = 'theme'; renderSettings(body); }));
+    g1.appendChild(setRow('<rect x="3" y="4" width="18" height="16" rx="2"/>', 'Wallpaper', '', () => { State.settingsView = 'wallpaper'; renderSettings(body); }));
+    g1.appendChild(setRow('<rect x="6" y="3" width="12" height="18" rx="2"/>', 'Display & Brightness', '', () => { State.settingsView = 'display'; renderSettings(body); }));
+    g1.appendChild(setRow('<path d="M4 20V10M10 20V4M16 20V14M22 20V8"/>', 'Font', State.fontFamily, () => { State.settingsView = 'font'; renderSettings(body); }));
+    g1.appendChild(setRow('<rect x="3" y="3" width="18" height="18" rx="6"/>', 'Icon shape', State.iconShape, () => { State.settingsView = 'iconshape'; renderSettings(body); }));
+    body.appendChild(g1);
+
+    const g2 = group('Device');
+    g2.appendChild(setRow('<rect x="2" y="7" width="18" height="10" rx="2"/><rect x="21" y="10" width="2" height="4" rx="1"/>', 'Battery', Math.round(State.battery) + '%', () => { State.settingsView = 'batdetail'; renderSettings(body); }));
+    g2.appendChild(setRow('<path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/><path d="M12 7v5l3 2"/>', 'Device Care', '', () => { State.settingsView = 'care'; renderSettings(body); }));
+    g2.appendChild(setRow('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>', 'Task Manager', State.runningApps.length + ' apps', () => { State.settingsView = 'taskmgr'; renderSettings(body); }));
+    g2.appendChild(setRow('<rect x="3" y="8" width="18" height="10" rx="2"/><circle cx="12" cy="13" r="3"/>', 'Background apps', '', () => { State.settingsView = 'bgapps'; renderSettings(body); }));
+    g2.appendChild(setRow('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 17h8"/>', 'Storage', State.usedStorage + ' / ' + State.totalStorage + ' GB', () => { State.settingsView = 'storage'; renderSettings(body); }));
+    g2.appendChild(setRow('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 'Screen timeout', formatTimeout(State.screenTimeout), () => { State.settingsView = 'timeout'; renderSettings(body); }));
+    g2.appendChild(setRow('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>', 'Battery % style', State.batStyle, () => { State.settingsView = 'batstyle'; renderSettings(body); }));
+    g2.appendChild(setRow('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>', 'Haptic feedback', '', () => { State.haptic = !State.haptic; Storage.set('haptic', State.haptic); haptic(15); renderSettings(body); }, false, true, State.haptic));
+    body.appendChild(g2);
+
+    const g3 = group('Security & Privacy');
+    g3.appendChild(setRow('<path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/>', 'Security', State.pinHash ? 'PIN set' : 'None', () => { State.settingsView = 'security'; renderSettings(body); }));
+    g3.appendChild(setRow('<rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V6a5 5 0 0110 0v4"/>', 'Permissions', Object.keys(State.permissions).length + ' apps', () => { State.settingsView = 'permissions'; renderSettings(body); }));
+    g3.appendChild(setRow('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 'Audit log', State.auditLog.length + ' events', () => { State.settingsView = 'audit'; renderSettings(body); }));
+    body.appendChild(g3);
+
+    const g4 = group('Apps');
+    g3.appendChild(setRow('<rect x="3" y="6" width="18" height="14" rx="2"/>', 'Installed apps', State.installedApps.length + ' apps', () => { State.settingsView = 'installedapps'; renderSettings(body); }));
+    body.appendChild(g4);
+
+    const g5 = group('Notifications');
+    g5.appendChild(setRow('<path d="M18 16v-5a6 6 0 00-12 0v5l-2 2h16z"/>', 'Notification log', State.notifLog.length + ' events', () => { State.settingsView = 'notiflog'; renderSettings(body); }));
+    body.appendChild(g5);
+
+    const g6 = group('System');
+    g6.appendChild(setRow('<rect x="2" y="7" width="20" height="12" rx="2"/>', 'Keyboard', '', () => { State.settingsView = 'keyboard'; renderSettings(body); }));
+    g6.appendChild(setRow('<circle cx="12" cy="12" r="9"/>', 'About', 'MC88_OS 1.0', () => { State.settingsView = 'about'; renderSettings(body); }));
+    body.appendChild(g6);
+    return;
+  }
+
+  body.appendChild(settingsBack(body));
+
+  if(State.settingsView === 'theme'){
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;';
+    [{ id:'green', bg:'#08090a', ac:'#34e58a' },{ id:'red', bg:'#0c0708', ac:'#ff4d5e' },{ id:'white', bg:'#f7f8fa', ac:'#0d1117' },{ id:'black', bg:'#000000', ac:'#ffffff' }].forEach(t => {
+      const sw = document.createElement('div');
+      sw.style.textAlign = 'center';
+      sw.innerHTML = '<div style="aspect-ratio:1;border-radius:16px;border:2px solid ' + (State.theme === t.id ? 'var(--accent)' : 'transparent') + ';background:linear-gradient(135deg,' + t.bg + ' 55%,' + t.ac + ' 55%);cursor:pointer;"></div><div style="font-size:10.5px;color:' + (State.theme === t.id ? 'var(--accent)' : 'var(--muted)') + ';margin-top:8px;">' + t.id.charAt(0).toUpperCase() + t.id.slice(1) + '</div>';
+      sw.onclick = () => { haptic(12); State.theme = t.id; Storage.set('theme', t.id); applyAll(); renderSettings(body); };
+      row.appendChild(sw);
+    });
+    body.appendChild(row);
+  }
+  else if(State.settingsView === 'wallpaper'){
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:10px;';
+    Object.keys(WALLPAPERS).forEach(k => {
+      const w = document.createElement('div');
+      w.style.cssText = 'aspect-ratio:9/16;border-radius:14px;cursor:pointer;border:2px solid ' + (State.wallpaper === k ? 'var(--accent)' : 'transparent') + ';background:' + WALLPAPERS[k] + ';';
+      w.onclick = () => { haptic(12); State.wallpaper = k; Storage.set('wp', k); applyAll(); renderSettings(body); };
+      grid.appendChild(w);
+    });
+    body.appendChild(grid);
+  }
+  else if(State.settingsView === 'display'){
+    const g = group('Brightness');
+    const s = document.createElement('input');
+    s.type = 'range'; s.min = 20; s.max = 100; s.value = State.brightness;
+    s.style.cssText = 'width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(128,128,128,.25);';
+    s.oninput = e => { State.brightness = +e.target.value; applyBrightnessOverlay(); $('#qpBright').value = State.brightness; };
+    g.appendChild(s);
+    body.appendChild(g);
+  }
+  else if(State.settingsView === 'font'){
+    const chipRow = document.createElement('div'); chipRow.className = 'chip-row';
+    [{ id:'default', l:'Default' },{ id:'serif', l:'Serif' },{ id:'mono', l:'Monospace' },{ id:'rounded', l:'Rounded' }].forEach(f => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (State.fontFamily === f.id ? ' on' : '');
+      c.textContent = f.l;
+      c.onclick = () => { haptic(10); State.fontFamily = f.id; Storage.set('font', f.id); applyAll(); renderSettings(body); };
+      chipRow.appendChild(c);
+    });
+    body.appendChild(chipRow);
+  }
+  else if(State.settingsView === 'iconshape'){
+    const chipRow = document.createElement('div'); chipRow.className = 'chip-row';
+    [{ id:'squircle', l:'Squircle' },{ id:'circle', l:'Circle' },{ id:'square', l:'Square' }].forEach(f => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (State.iconShape === f.id ? ' on' : '');
+      c.textContent = f.l;
+      c.onclick = () => { haptic(10); State.iconShape = f.id; Storage.set('shape', f.id); applyAll(); renderSettings(body); };
+      chipRow.appendChild(c);
+    });
+    body.appendChild(chipRow);
+  }
+  else if(State.settingsView === 'care'){
+    [{ label: 'RAM', used: State.usedRam, total: State.totalRam, unit: 'GB', color: 'blue' },{ label: 'Storage', used: State.usedStorage, total: State.totalStorage, unit: 'GB', color: 'green' },{ label: 'SD Card', used: State.usedSD, total: State.totalSD, unit: 'GB', color: 'orange' },{ label: 'Battery Health', used: State.batteryHealth, total: 100, unit: '%', color: State.batteryHealth > 80 ? 'green' : 'orange' }].forEach(m => {
+      const el = document.createElement('div');
+      el.className = 'meter';
+      const pct = Math.min(100, (m.used / m.total) * 100);
+      el.innerHTML = '<div class="top"><span class="lb">' + m.label + '</span><span class="vl">' + m.used.toFixed(1) + (m.unit === '%' ? '%' : ' / ' + m.total + ' ' + m.unit) + '</span></div><div class="bar"><i class="' + m.color + '" style="width:' + pct + '%"></i></div>';
+      body.appendChild(el);
+    });
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = 'Optimize Now';
+    btn.onclick = () => {
+      haptic(20);
+      btn.textContent = 'Optimizing…'; btn.disabled = true;
+      setTimeout(() => {
+        const fr = +(Math.random() * 0.8 + 0.3).toFixed(1);
+        const fs = +(Math.random() * 1.5 + 0.5).toFixed(1);
+        State.usedRam = Math.max(0.4, State.usedRam - fr);
+        State.usedStorage = Math.max(2, State.usedStorage - fs);
+        toast(fr + ' GB RAM · ' + fs + ' GB storage freed');
+        body.innerHTML = ''; renderSettings(body);
+      }, 1200);
+    };
+    body.appendChild(btn);
+  }
+  else if(State.settingsView === 'batdetail'){
+    const p = Math.round(State.battery);
+    const hero = document.createElement('div');
+    hero.className = 'bat-hero';
+    hero.innerHTML = '<div><span class="big">' + p + '</span><span class="pct">%</span></div><div class="stat">' + (State.charging ? '⚡ Charging — 42 min remaining' : '~8h 24m remaining') + '</div>';
+    body.appendChild(hero);
+    const chart = document.createElement('div'); chart.className = 'bat-chart';
+    const vals = [4,7,6,9,8,5,3,4,6,7,5,4];
+    chart.innerHTML = vals.map(v => '<i style="height:' + (v*10) + '%"></i>').join('');
+    body.appendChild(chart);
+    const cl = document.createElement('div');
+    cl.style.cssText = 'font-size:10px;color:var(--muted);text-align:center;margin-bottom:20px;';
+    cl.textContent = 'Last 12 hours';
+    body.appendChild(cl);
+    const uses = [{ n: 'Screen', v: 38 },{ n: 'Background apps', v: 22 },{ n: 'Music', v: 12 },{ n: 'System', v: 18 },{ n: 'Other', v: 10 }];
+    const g = group('Usage since last charge');
+    uses.forEach(u => {
+      const m = document.createElement('div'); m.className = 'meter';
+      m.innerHTML = '<div class="top"><span class="lb">' + u.n + '</span><span class="vl">' + u.v + '%</span></div><div class="bar"><i class="' + (u.v > 30 ? 'red' : u.v > 20 ? 'orange' : 'green') + '" style="width:' + u.v + '%"></i></div>';
+      g.appendChild(m);
+    });
+    body.appendChild(g);
+  }
+  else if(State.settingsView === 'storage'){
+    const total = 128;
+    const rows = [
+      { n:'Apps', v: 24, c:'blue' },
+      { n:'Images', v: 12, c:'green' },
+      { n:'Video', v: 8, c:'orange' },
+      { n:'Audio', v: 3, c:'purple' },
+      { n:'Documents', v: 1, c:'green' },
+      { n:'System', v: 14, c:'red' },
+      { n:'Free', v: 66, c:'green' }
+    ];
+    const g = group('Storage (' + total + ' GB)');
+    rows.forEach(r => {
+      const m = document.createElement('div'); m.className = 'meter';
+      m.innerHTML = '<div class="top"><span class="lb">' + r.n + '</span><span class="vl">' + r.v + ' GB</span></div><div class="bar"><i class="' + r.c + '" style="width:' + (r.v / total * 100) + '%"></i></div>';
+      g.appendChild(m);
+    });
+    body.appendChild(g);
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn'; btn.textContent = 'Clean cache';
+    btn.onclick = () => { haptic(20); toast('1.2 GB freed'); };
+    body.appendChild(btn);
+  }
+  else if(State.settingsView === 'taskmgr'){
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:12px;text-align:center;';
+    title.textContent = State.runningApps.length + ' apps in memory';
+    body.appendChild(title);
+    const apps = State.runningApps.slice().reverse();
+    if(apps.length === 0){
+      body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No apps running</div>');
+    }
+    apps.forEach(id => {
+      const a = APPS.find(x => x.id === id);
+      if(!a) return;
+      const ram = +(Math.random() * 180 + 30).toFixed(0);
+      const cpu = +(Math.random() * 8 + 0.5).toFixed(1);
+      const bat = +(Math.random() * 4 + 0.2).toFixed(1);
+      const el = document.createElement('div');
+      el.className = 'tm-app';
+      el.innerHTML = `
+        <div class="tm-head">
+          <div class="tm-ico"><svg viewBox="0 0 24 24">${a.svg}</svg></div>
+          <div class="tm-n">${a.label}</div>
+          <button class="tm-stop" data-id="${id}">Stop</button>
+        </div>
+        <div class="tm-stat"><span>RAM</span><span>${ram} MB</span></div>
+        <div class="tm-bar"><i style="width:${Math.min(100, ram/3)}%;background:var(--info);"></i></div>
+        <div class="tm-stat"><span>CPU</span><span>${cpu}%</span></div>
+        <div class="tm-bar"><i style="width:${cpu*8}%;background:var(--warn);"></i></div>
+        <div class="tm-stat"><span>Battery (24h)</span><span>${bat}%</span></div>
+        <div class="tm-bar"><i style="width:${bat*15}%;background:var(--danger);"></i></div>
+      `;
+      el.querySelector('.tm-stop').onclick = () => {
+        haptic(15);
+        State.runningApps = State.runningApps.filter(x => x !== id);
+        Storage.set('running', State.runningApps);
+        renderTaskbar();
+        body.innerHTML = ''; renderSettings(body);
+        toast(a.label + ' stopped');
+      };
+      body.appendChild(el);
+    });
+  }
+  else if(State.settingsView === 'bgapps'){
+    const apps = State.runningApps.slice().reverse();
+    if(apps.length === 0){ body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);">No background apps</div>'); }
+    else {
+      apps.forEach(id => {
+        const a = APPS.find(x => x.id === id);
+        if(!a) return;
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border);';
+        el.innerHTML = '<div style="width:36px;height:36px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:1.9;">' + a.svg + '</svg></div><div style="flex:1;"><div style="font-size:13.5px;font-weight:500;">' + a.label + '</div><div style="font-size:10.5px;color:var(--muted);margin-top:2px;">' + (Math.random()*80 + 5).toFixed(1) + ' MB · ' + (Math.random()*5 + 0.5).toFixed(1) + '% battery</div></div><button data-id="' + id + '" style="padding:6px 12px;border-radius:8px;background:rgba(255,77,94,.15);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;">Stop</button>';
+        el.querySelector('button').onclick = () => {
+          haptic(15);
+          State.runningApps = State.runningApps.filter(x => x !== id);
+          Storage.set('running', State.runningApps);
+          renderTaskbar();
+          body.innerHTML = ''; renderSettings(body);
+          toast(a.label + ' stopped');
+        };
+        body.appendChild(el);
+      });
+    }
+  }
+  else if(State.settingsView === 'installedapps'){
+    if(State.installedApps.length === 0){
+      body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No user-installed apps</div>');
+    } else {
+      State.installedApps.forEach(id => {
+        const pkg = AVAILABLE_PACKAGES.find(p => p.id === id);
+        if(!pkg) return;
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border);';
+        el.innerHTML = '<div style="width:40px;height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:1.8;">' + pkg.icon + '</svg></div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">' + pkg.name + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">' + pkg.author + ' · ' + pkg.size + '</div></div><button data-id="' + id + '" style="padding:6px 12px;border-radius:8px;background:rgba(255,77,94,.15);color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;">Uninstall</button>';
+        el.querySelector('button').onclick = () => {
+          haptic(15);
+          State.installedApps = State.installedApps.filter(x => x !== id);
+          Storage.set('installed', State.installedApps);
+          APPS.splice(APPS.findIndex(a => a.id === id), 1);
+          body.innerHTML = ''; renderSettings(body);
+          renderHome();
+          toast(pkg.name + ' uninstalled');
+        };
+        body.appendChild(el);
+      });
+    }
+  }
+  else if(State.settingsView === 'permissions'){
+    // list apps with permissions
+    const apps = APPS.filter(a => a.id !== 'settings' && a.id !== 'installer');
+    apps.forEach(a => {
+      const hasPerms = Object.keys(State.permissions[a.id] || {}).length > 0;
+      if(!hasPerms) return;
+      const g = group(a.label);
+      Object.keys(State.permissions[a.id]).forEach(p => {
+        const state = State.permissions[a.id][p];
+        const perm = PERMS[p];
+        if(!perm) return;
+        const el = document.createElement('div');
+        el.className = 'perm-row';
+        const stateLabel = state === 'granted' ? 'Allowed' : state === 'denied' ? 'Denied' : 'Ask';
+        const stateClass = state === 'granted' ? 'granted' : state === 'denied' ? 'denied' : '';
+        el.innerHTML = `<div class="pl"><div class="pi"><svg viewBox="0 0 24 24">${perm.icon}</svg></div><div><div class="pn">${perm.n}</div></div></div><div class="pv ${stateClass}" data-app="${a.id}" data-perm="${p}">${stateLabel}</div>`;
+        el.querySelector('.pv').onclick = () => {
+          haptic(10);
+          // cycle
+          const s = State.permissions[a.id][p];
+          const next = s === 'granted' ? 'denied' : s === 'denied' ? 'ask' : 'granted';
+          setPermState(a.id, p, next);
+          body.innerHTML = ''; renderSettings(body);
+        };
+        g.appendChild(el);
+      });
+      body.appendChild(g);
+    });
+    if(body.children.length <= 1){
+      body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No permissions granted yet</div>');
+    }
+  }
+  else if(State.settingsView === 'audit'){
+    const g = group('Recent permission events');
+    if(State.auditLog.length === 0){
+      body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No events yet</div>');
+    } else {
+      State.auditLog.slice().reverse().slice(0, 40).forEach(e => {
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--border);font-size:12px;';
+        const age = Math.floor((Date.now() - e.t) / 60000);
+        const ageStr = age < 1 ? 'now' : age < 60 ? age + 'm' : Math.floor(age/60) + 'h';
+        el.innerHTML = `<span><b>${e.app}</b> · ${e.perm} · ${e.action}</span><span style="color:var(--muted);">${ageStr}</span>`;
+        g.appendChild(el);
+      });
+      body.appendChild(g);
+    }
+  }
+  else if(State.settingsView === 'notiflog'){
+    const g = group('Notification history');
+    if(State.notifLog.length === 0){
+      body.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">No notifications yet</div>');
+    } else {
+      State.notifLog.slice().reverse().slice(0, 50).forEach(n => {
+        const el = document.createElement('div');
+        el.style.cssText = 'padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;';
+        const age = Math.floor((Date.now() - n.t) / 60000);
+        const ageStr = age < 1 ? 'now' : age < 60 ? age + 'm' : Math.floor(age/60) + 'h';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><b style="font-size:12.5px;">${n.title}</b><span style="font-size:10.5px;color:var(--muted);">${ageStr}</span></div><div style="font-size:11.5px;color:var(--muted);line-height:1.5;">${n.body}</div>`;
+        g.appendChild(el);
+      });
+      body.appendChild(g);
+    }
+  }
+  else if(State.settingsView === 'timeout'){
+    const chipRow = document.createElement('div'); chipRow.className = 'chip-row';
+    [{ v:30000, l:'30 sec' },{ v:60000, l:'1 min' },{ v:120000, l:'2 min' },{ v:300000, l:'5 min' },{ v:600000, l:'10 min' },{ v:0, l:'Never' }].forEach(t => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (State.screenTimeout === t.v ? ' on' : '');
+      c.textContent = t.l;
+      c.onclick = () => { haptic(10); State.screenTimeout = t.v; Storage.set('timeout', t.v); resetDeepSleep(); renderSettings(body); };
+      chipRow.appendChild(c);
+    });
+    body.appendChild(chipRow);
+  }
+  else if(State.settingsView === 'batstyle'){
+    const chipRow = document.createElement('div'); chipRow.className = 'chip-row';
+    [{ v:'inside', l:'Inside icon' },{ v:'beside', l:'Beside icon' },{ v:'hidden', l:'Hidden' }].forEach(t => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (State.batStyle === t.v ? ' on' : '');
+      c.textContent = t.l;
+      c.onclick = () => { haptic(10); State.batStyle = t.v; Storage.set('batstyle', t.v); applyBatStyle(); renderSettings(body); };
+      chipRow.appendChild(c);
+    });
+    body.appendChild(chipRow);
+  }
+  else if(State.settingsView === 'security'){
+    const g = group('Recovery Code');
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface);border:1px dashed var(--accent);border-radius:14px;padding:18px;text-align:center;';
+    box.innerHTML = '<div style="font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;">Device Recovery Code</div><div style="font-family:ui-monospace,monospace;font-size:17px;letter-spacing:2px;color:var(--accent);margin-top:10px;font-weight:600;">' + State.recovery + '</div>';
+    g.appendChild(box);
+    body.appendChild(g);
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:var(--muted);line-height:1.55;margin:12px 6px 20px;';
+    note.textContent = 'Save this code. It is the only way to regain access if you forget your PIN.';
+    body.appendChild(note);
+    const g2 = group('PIN');
+    g2.appendChild(setRow('<path d="M5 11h14v8H5z"/>', 'Change PIN', '', () => { State.settingsView = 'password'; renderSettings(body); }));
+    if(State.pinHash) g2.appendChild(setRow('<path d="M6 18L18 6M6 6l12 12"/>', 'Remove PIN', '', async () => { State.pinHash = null; Storage.del('pinHash'); toast('PIN removed'); renderSettings(body); }, true));
+    body.appendChild(g2);
+  }
+  else if(State.settingsView === 'keyboard'){
+    const g = group();
+    g.appendChild(setRow('<rect x="2" y="7" width="20" height="12" rx="2"/>', 'Autocorrect', '', () => { haptic(10); toast('Autocorrect toggled'); }, false, true, true));
+    g.appendChild(setRow('<path d="M11 5L6 9H2v6h4l5 4V5z"/>', 'Key sounds', '', () => { haptic(10); toast('Key sounds toggled'); }, false, true, false));
+    g.appendChild(setRow('<path d="M9 3h6l1 3h4v15H4V6h4z"/>', 'Vibration on key', '', () => { haptic(10); toast('Key vibration toggled'); }, false, true, State.haptic));
+    g.appendChild(setRow('<circle cx="12" cy="12" r="9"/>', 'Language', 'English (US)', () => { haptic(10); toast('English (US)'); }));
+    body.appendChild(g);
+    const prev = document.createElement('div');
+    prev.className = 'kb-prev';
+    prev.textContent = 'The quick brown fox jumps over the lazy dog.';
+    body.appendChild(prev);
+    const tryBtn = document.createElement('button');
+    tryBtn.className = 'opt-btn';
+    tryBtn.textContent = 'Try keyboard';
+    tryBtn.onclick = () => {
+      showModal(`
+        <h3>Keyboard test</h3>
+        <input id="kbTest" type="text" placeholder="Tap to type…" style="width:100%;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--fg);font-size:14px;margin-bottom:12px;">
+        <button class="modal-btn ghost" onclick="hideModal()">Close</button>
+      `);
+      setTimeout(() => $('#kbTest') && $('#kbTest').focus(), 200);
+    };
+    body.appendChild(tryBtn);
+  }
+  else if(State.settingsView === 'password'){
+    const g = group();
+    g.innerHTML = '<h4>Set new 4‑digit PIN</h4>';
+    const dotsWrap = document.createElement('div');
+    dotsWrap.className = 'pin-dots'; dotsWrap.style.cssText = 'justify-content:center;margin-top:20px;';
+    dotsWrap.innerHTML = '<i></i><i></i><i></i><i></i>';
+    g.appendChild(dotsWrap);
+    const pad = document.createElement('div');
+    pad.className = 'keypad'; pad.style.marginTop = '30px';
+    let buf = '';
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k => {
+      const b = document.createElement('button');
+      if(k === ''){ b.style.visibility = 'hidden'; }
+      else if(k === '⌫'){ b.textContent = '⌫'; b.className = 'ghost'; }
+      else { b.textContent = k; }
+      b.onclick = async () => {
+        haptic(8);
+        if(k === '⌫'){ buf = buf.slice(0,-1); }
+        else if(k && buf.length < 4){ buf += k; }
+        dotsWrap.querySelectorAll('i').forEach((d,i) => d.classList.toggle('filled', i < buf.length));
+        if(buf.length === 4){
+          State.pinHash = await hashPin(buf);
+          Storage.set('pinHash', State.pinHash);
+          buf = '';
+          setTimeout(() => { dotsWrap.querySelectorAll('i').forEach(d => d.classList.remove('filled')); toast('PIN updated'); }, 300);
+        }
+      };
+      pad.appendChild(b);
+    });
+    g.appendChild(pad);
+    body.appendChild(g);
+  }
+  else if(State.settingsView === 'about'){
+    const hero = document.createElement('div');
+    hero.style.cssText = 'text-align:center;padding:26px 0 24px;';
+    hero.innerHTML = '<div style="font-size:26px;font-weight:800;letter-spacing:2px;">MC88_OS</div><div style="font-size:11.5px;color:var(--muted);margin-top:6px;">Version 1.0 · Build 2026.09.15</div>';
+    body.appendChild(hero);
+    const g = group('Device');
+    [['Model', 'MC88 Reference'],['RAM', State.totalRam + ' GB'],['Storage', State.totalStorage + ' GB'],['SD Card', State.totalSD + ' GB'],['Kernel', 'MC88-core 1.0'],['Build', 'OFFLINE‑FIRST']].forEach(([k, v]) => g.appendChild(setRow('<circle cx="12" cy="12" r="3"/>', k, v, () => {})));
+    body.appendChild(g);
+    const g2 = group('Maintenance');
+    g2.appendChild(setRow('<path d="M12 4v16M4 12h16"/>', 'Reset first-time setup', '', () => {
+      haptic(15);
+      Storage.del('setup');
+      location.reload();
+    }, true));
+    g2.appendChild(setRow('<path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>', 'Factory reset', '', () => {
+      if(confirm('Erase everything and start over?')){ localStorage.clear(); location.reload(); }
+    }, true));
+    body.appendChild(g2);
+    const g3 = group('Recovery');
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface);border:1px dashed var(--accent);border-radius:14px;padding:18px;text-align:center;';
+    box.innerHTML = '<div style="font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;">Device Recovery Code</div><div style="font-family:ui-monospace,monospace;font-size:17px;letter-spacing:2px;color:var(--accent);margin-top:10px;font-weight:600;">' + State.recovery + '</div>';
+    g3.appendChild(box);
+    body.appendChild(g3);
+  }
+}
+function formatTimeout(ms){
+  if(ms === 0) return 'Never';
+  if(ms < 60000) return (ms/1000) + ' sec';
+  return (ms/60000) + ' min';
+}
+
+/* =========================================================
+   SETUP
+   ========================================================= */
+const setupSteps = ['welcome', 'theme', 'wallpaper', 'pin', 'font', 'done'];
+let setupIdx = 0;
+let setupData = { theme: 'green', wallpaper: 'wp0', pin: '', font: 'default' };
+function renderSetup(){
+  const prog = $('#setupProg');
+  prog.innerHTML = setupSteps.map((_, i) => '<i class="' + (i <= setupIdx ? 'on' : '') + '"></i>').join('');
+  const body = $('#setupBody');
+  body.innerHTML = '';
+  const step = setupSteps[setupIdx];
+  if(step === 'welcome'){
+    body.innerHTML = '<div class="setup-title">Welcome to MC88_OS</div><div class="setup-sub">A minimal, offline-first operating system. Let\'s set things up in 4 quick steps.</div><div style="margin-top:40px;padding:20px;border-radius:18px;background:var(--surface);border:1px solid var(--border);font-size:12.5px;line-height:1.7;color:var(--muted);"><b style="color:var(--fg);display:block;margin-bottom:8px;">What you get</b>• No trackers, no background sync<br>• Full offline operation<br>• Fast and lightweight<br>• All data stays on your device</div>';
+  }
+  else if(step === 'theme'){
+    body.innerHTML = '<div class="setup-title">Choose a theme</div><div class="setup-sub">You can change this any time in Settings.</div>';
+    ['green','red','white','black'].forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'setup-opt' + (setupData.theme === t ? ' on' : '');
+      el.innerHTML = '<div class="dot"></div><div><div class="lbl">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div><div class="desc">' + (t === 'green' ? 'Signature dark green' : t === 'red' ? 'Dark red accent' : t === 'white' ? 'Light mode' : 'Pure black AMOLED') + '</div></div>';
+      el.onclick = () => { haptic(10); setupData.theme = t; State.theme = t; applyAll(); renderSetup(); };
+      body.appendChild(el);
+    });
+  }
+  else if(step === 'wallpaper'){
+    body.innerHTML = '<div class="setup-title">Pick a wallpaper</div><div class="setup-sub">Choose a starting background.</div>';
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:10px;';
+    Object.keys(WALLPAPERS).forEach(k => {
+      const w = document.createElement('div');
+      w.style.cssText = 'aspect-ratio:9/16;border-radius:14px;cursor:pointer;border:3px solid ' + (setupData.wallpaper === k ? 'var(--accent)' : 'transparent') + ';background:' + WALLPAPERS[k] + ';';
+      w.onclick = () => { haptic(10); setupData.wallpaper = k; State.wallpaper = k; applyAll(); renderSetup(); };
+      grid.appendChild(w);
+    });
+    body.appendChild(grid);
+  }
+  else if(step === 'pin'){
+    body.innerHTML = '<div class="setup-title">Set a PIN</div><div class="setup-sub">4 digits. Default is 1234 — you can skip and change later.</div>';
+    const dotsWrap = document.createElement('div');
+    dotsWrap.className = 'pin-dots'; dotsWrap.style.cssText = 'justify-content:center;margin-top:20px;';
+    dotsWrap.innerHTML = '<i></i><i></i><i></i><i></i>';
+    body.appendChild(dotsWrap);
+    const pad = document.createElement('div');
+    pad.className = 'keypad'; pad.style.marginTop = '30px';
+    let buf = setupData.pin || '';
+    const update = () => { dotsWrap.querySelectorAll('i').forEach((d,i) => d.classList.toggle('filled', i < buf.length)); };
+    update();
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k => {
+      const b = document.createElement('button');
+      if(k === ''){ b.style.visibility = 'hidden'; }
+      else if(k === '⌫'){ b.textContent = '⌫'; b.className = 'ghost'; }
+      else { b.textContent = k; }
+      b.onclick = () => {
+        haptic(8);
+        if(k === '⌫'){ buf = buf.slice(0,-1); }
+        else if(k && buf.length < 4){ buf += k; }
+        setupData.pin = buf;
+        update();
+      };
+      pad.appendChild(b);
+    });
+    body.appendChild(pad);
+  }
+  else if(step === 'font'){
+    body.innerHTML = '<div class="setup-title">Choose font</div><div class="setup-sub">Fine-tune your system typography.</div>';
+    [{ id:'default', l:'Default' },{ id:'serif', l:'Serif' },{ id:'mono', l:'Monospace' },{ id:'rounded', l:'Rounded' }].forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'setup-opt' + (setupData.font === f.id ? ' on' : '');
+      el.style.fontFamily = f.id === 'serif' ? 'Georgia, serif' : f.id === 'mono' ? 'monospace' : f.id === 'rounded' ? 'Nunito, sans-serif' : 'inherit';
+      el.innerHTML = '<div class="dot"></div><div><div class="lbl">' + f.l + '</div><div class="desc">The quick brown fox</div></div>';
+      el.onclick = () => { haptic(10); setupData.font = f.id; State.fontFamily = f.id; applyAll(); renderSetup(); };
+      body.appendChild(el);
+    });
+  }
+  else if(step === 'done'){
+    body.innerHTML = '<div class="setup-title">You\'re all set ✨</div><div class="setup-sub">MC88_OS is ready. Here\'s a summary of your choices.</div><div style="margin-top:20px;padding:18px;border-radius:18px;background:var(--surface);border:1px solid var(--border);font-size:13px;line-height:2;"><div><b>Theme:</b> ' + setupData.theme + '</div><div><b>PIN:</b> ' + (setupData.pin || '1234 (default)') + '</div><div><b>Font:</b> ' + setupData.font + '</div><div><b>Wallpaper:</b> ' + setupData.wallpaper + '</div></div>';
+  }
+  const nextBtn = $('#setupNext');
+  nextBtn.style.display = 'block';
+  nextBtn.textContent = setupIdx === setupSteps.length - 1 ? 'Finish' : 'Continue';
+  nextBtn.onclick = async () => {
+    haptic(15);
+    if(setupIdx === setupSteps.length - 1){
+      State.theme = setupData.theme;
+      State.wallpaper = setupData.wallpaper;
+      State.pinHash = await hashPin(setupData.pin || '1234');
+      State.fontFamily = setupData.font;
+      Storage.set('theme', State.theme);
+      Storage.set('wp', State.wallpaper);
+      Storage.set('pinHash', State.pinHash);
+      Storage.set('font', State.fontFamily);
+      Storage.set('setup', true);
+      State.setupDone = true;
+      applyAll();
+      boot(() => show('lock'));
+      return;
+    }
+    setupIdx++;
+    renderSetup();
+  };
+}
+function startSetup(){
+  setupIdx = 0;
+  setupData = { theme: State.theme, wallpaper: State.wallpaper, pin: '', font: State.fontFamily };
+  show('setup');
+  renderSetup();
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+applyAll();
+renderBattery();
+renderNotifs();
+applyRotation();
+
+// default pin if setup done but no hash
+if(State.setupDone && !State.pinHash){
+  (async () => { State.pinHash = await hashPin('1234'); Storage.set('pinHash', State.pinHash); })();
+}
+
+if(!State.setupDone){
+  State.isSetupEnv = true;
+  startSetup();
+} else {
+  boot(() => show('lock'));
+}
+
+/* =========================================================
+   SCREENSHOT SHORTCUT
+   ========================================================= */
+let sbPwDown = false, sbVdDown = false;
+$('#sb-pw').addEventListener('mousedown', () => { sbPwDown = true; checkSs(); });
+$('#sb-vd').addEventListener('mousedown', () => { sbVdDown = true; checkSs(); });
+$('#sb-pw').addEventListener('mouseup', () => sbPwDown = false);
+$('#sb-vd').addEventListener('mouseup', () => sbVdDown = false);
+function checkSs(){ if(sbPwDown && sbVdDown) takeScreenshot(); }
+
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey && e.shiftKey && e.key === 'S'){ e.preventDefault(); takeScreenshot(); }
+  if(e.key === 'Escape'){
+    if($('#search').classList.contains('open')) $('#search').classList.remove('open');
+    if($('#qp').classList.contains('open')) closeQP();
+    if($('#lpMenu').classList.contains('on')) hideLpMenu();
+    if($('#recents').classList.contains('open')) $('#recents').classList.remove('open');
+    if($('#drawer').classList.contains('open')) closeDrawer();
+    if($('#uniModal').classList.contains('on')) hideModal();
+    KB.close();
+  }
+});
+
+/* status bar DND/BT sync */
+let _lastDnd = null, _lastBt = null;
+setInterval(() => {
+  if(_lastDnd !== State.dnd){ _lastDnd = State.dnd; $('#stDnd').style.display = State.dnd ? 'block' : 'none'; }
+  if(_lastBt !== State.bluetooth){ _lastBt = State.bluetooth; $('#stBt').style.display = State.bluetooth ? 'block' : 'none'; }
+}, 2000);
+
+/* alarm check */
+setInterval(() => {
+  if(State.alarms.length === 0) return;
+  const d = new Date();
+  State.alarms.forEach(a => {
+    if(a.on && !a._fired && a.h === d.getHours() && a.m === d.getMinutes()){
+      a._fired = true;
+      triggerAlarm(a);
+    }
+    if(a.h !== d.getHours() || a.m !== d.getMinutes()) a._fired = false;
+  });
+}, 5000);
+
+/* click outside keyboard closes it */
+document.addEventListener('mousedown', e => {
+  if(!KB.open) return;
+  if(e.target.closest('#kb')) return;
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  KB.close();
+});
+</script>
+</body>
+</html>

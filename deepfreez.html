@@ -1,0 +1,1112 @@
+<!--
+███    ███    ████████    ████████    ████████
+████  ████   ███    ███  ███    ███  ███    ███
+██ ████ ██   ███         ███    ███  ███    ███
+██  ██  ██   ███          ████████    ████████
+██      ██   ███         ███    ███  ███    ███
+██      ██   ███    ███  ███    ███  ███    ███
+██      ██    ████████    ████████    ████████
+    MC88 · Mohamed Cheikh · mohamed005cheikh@gmail.com
+-->
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC88 — Control Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --bg-0: #04121c;
+    --bg-1: #071c2c;
+    --bg-2: #0a2538;
+    --bg-3: #0e3045;
+    --border: #1a4a66;
+    --border-soft: #14374e;
+    --text: #eaf7ff;
+    --text-dim: #8ec6e3;
+    --text-faint: #4a7a94;
+    --ice: #00e5ff;
+    --ice-deep: #00b8d4;
+    --ice-glow: rgba(0,229,255,0.35);
+    --frost: #b3e5fc;
+    --danger: #ff3d5a;
+    --danger-dim: #c62828;
+    --warn: #ffb300;
+    --success: #00e5ff;
+  }
+  
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    background: var(--bg-0);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 90px;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(0,229,255,0.08), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(0,184,212,0.06), transparent 45%);
+    background-attachment: fixed;
+  }
+  
+  /* Frost particles overlay */
+  .frost-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.35), transparent),
+      radial-gradient(1px 1px at 35% 85%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.25), transparent);
+    background-size: 200px 200px, 300px 300px, 250px 250px, 180px 180px, 220px 220px;
+    opacity: 0.6;
+  }
+  
+  /* Header */
+  .header {
+    padding: 22px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(4,18,28,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-soft);
+    z-index: 100;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--ice), var(--ice-deep));
+    display: grid; place-items: center;
+    color: #001a22;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    box-shadow: 0 0 20px var(--ice-glow);
+    position: relative;
+  }
+  .logo::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.4);
+    pointer-events: none;
+  }
+  .brand-name {
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    background: linear-gradient(90deg, var(--text), var(--frost));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .brand-sub {
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 12px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.35);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--ice);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ice);
+    box-shadow: 0 0 10px var(--ice);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  
+  .container { padding: 18px; max-width: 600px; margin: 0 auto; position: relative; z-index: 2; }
+  
+  /* Hero */
+  .hero {
+    background: linear-gradient(150deg, var(--bg-2), var(--bg-1));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 26px 22px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, var(--ice-glow), transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '❄';
+    position: absolute;
+    top: 16px; right: 20px;
+    font-size: 48px;
+    color: rgba(0,229,255,0.08);
+    font-weight: 900;
+  }
+  .hero-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+  .ram-row {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .ram-num {
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -2.5px;
+    color: var(--ice);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 30px var(--ice-glow);
+    line-height: 1;
+  }
+  .ram-unit {
+    font-size: 20px;
+    color: var(--text-dim);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .ram-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  .ram-label strong {
+    color: var(--ice);
+    font-weight: 900;
+  }
+  
+  .bar {
+    height: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-soft);
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ice), var(--ice-deep));
+    border-radius: 5px;
+    transition: width 0.7s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 0 15px var(--ice-glow);
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--ice);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+  }
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 3px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  
+  /* Section */
+  .section { margin-bottom: 26px; }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px 12px;
+    gap: 10px;
+  }
+  .section-title {
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 900;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--ice);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--ice-glow);
+  }
+  .section-count {
+    font-size: 10px;
+    color: var(--text-dim);
+    background: var(--bg-2);
+    padding: 4px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+    letter-spacing: 1px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  
+  /* List */
+  .list {
+    background: var(--bg-1);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .item {
+    display: flex; align-items: center;
+    gap: 13px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    transition: background 0.15s;
+  }
+  .item:last-child { border-bottom: none; }
+  .item:active { background: var(--bg-2); }
+  
+  .ico {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    font-size: 17px;
+    flex-shrink: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    color: var(--frost);
+    font-weight: 900;
+  }
+  .ico.google {
+    background: linear-gradient(135deg, #4285f4, #ea4335);
+    border-color: transparent;
+    color: #fff;
+  }
+  .ico.system {
+    background: linear-gradient(135deg, #00b8d4, #0097a7);
+    border-color: transparent;
+    color: #001a22;
+  }
+  .ico.user {
+    background: linear-gradient(135deg, #b3e5fc, #81d4fa);
+    border-color: transparent;
+    color: #003344;
+  }
+  .ico.frozen {
+    background: linear-gradient(135deg, var(--ice), var(--ice-deep));
+    border-color: transparent;
+    color: #001a22;
+    box-shadow: 0 0 12px var(--ice-glow);
+  }
+  
+  .meta { flex: 1; min-width: 0; }
+  .meta-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .meta-sub {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 2px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .meta-sub.ice { color: var(--ice-deep); }
+  
+  /* Toggle */
+  .toggle {
+    width: 46px; height: 28px;
+    background: var(--bg-3);
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.25s;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border);
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    background: #567;
+    border-radius: 50%;
+    transition: all 0.25s cubic-bezier(.4,0,.2,1);
+  }
+  .toggle.on {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--ice);
+  }
+  .toggle.on::after {
+    left: calc(100% - 22px);
+    background: var(--ice);
+    box-shadow: 0 0 10px var(--ice-glow);
+  }
+  .toggle.danger.on {
+    background: rgba(255,61,90,0.15);
+    border-color: var(--danger);
+  }
+  .toggle.danger.on::after {
+    background: var(--danger);
+    box-shadow: 0 0 10px rgba(255,61,90,0.5);
+  }
+  
+  /* Banner */
+  .banner {
+    display: flex; gap: 12px;
+    padding: 14px 16px;
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--frost);
+    line-height: 1.6;
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+  .banner.warn {
+    background: rgba(255,179,0,0.05);
+    border-color: rgba(255,179,0,0.25);
+    color: #ffe0a3;
+  }
+  .banner.danger {
+    background: rgba(255,61,90,0.05);
+    border-color: rgba(255,61,90,0.25);
+    color: #ffb3c0;
+  }
+  .banner .b-ico {
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1.3;
+  }
+  .banner strong { color: var(--ice); font-weight: 900; }
+  .banner.warn strong { color: var(--warn); }
+  .banner.danger strong { color: var(--danger); }
+  
+  /* Buttons */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .btn:active { transform: scale(0.98); background: var(--bg-3); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--ice), var(--ice-deep));
+    color: #001a22;
+    border-color: transparent;
+    box-shadow: 0 0 20px var(--ice-glow);
+  }
+  .btn.danger {
+    border-color: rgba(255,61,90,0.4);
+    color: #ff8a9e;
+  }
+  .btn.danger:active { background: rgba(255,61,90,0.08); }
+  .btn.small {
+    padding: 9px 14px;
+    width: auto;
+    font-size: 11px;
+    border-radius: 9px;
+  }
+  
+  /* Add button row */
+  .add-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,10,18,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+    animation: slideUp 0.3s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .modal-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+  
+  .pick-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .pick-item:active { background: var(--bg-2); }
+  .pick-item.selected {
+    background: rgba(0,229,255,0.08);
+    border-color: rgba(0,229,255,0.3);
+  }
+  .pick-check {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: transparent;
+    font-weight: 900;
+  }
+  .pick-item.selected .pick-check {
+    background: var(--ice);
+    border-color: var(--ice);
+    color: #001a22;
+  }
+  
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 30px 16px 10px;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 2px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .footer .sig {
+    font-weight: 900;
+    color: var(--ice-deep);
+    margin-top: 6px;
+    letter-spacing: 3px;
+  }
+  
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+    color: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 3px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border-soft);
+  }
+  
+  .empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  /* Bottom nav */
+  .nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(4,18,28,0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    color: var(--text-faint);
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.2s;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .nav-item.active { color: var(--ice); }
+  .nav-item .n-ico {
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 900;
+  }
+  
+  .folder-tip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(0,229,255,0.04);
+    border: 1px dashed rgba(0,229,255,0.25);
+    border-radius: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-top: 10px;
+    font-weight: 700;
+  }
+  .folder-tip .f-ico {
+    font-size: 22px;
+    color: var(--ice);
+  }
+</style>
+</head>
+<body>
+
+<div class="frost-overlay"></div>
+
+<div class="header">
+  <div class="brand">
+    <div class="logo">88</div>
+    <div>
+      <div class="brand-name">MC88</div>
+      <div class="brand-sub">Device Owner Active</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <span class="status-dot"></span>
+    <span>Frozen</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- RAM HERO -->
+  <div class="hero">
+    <div class="hero-label">Available Memory</div>
+    <div class="ram-row">
+      <span class="ram-num" id="ramNum">1.42</span>
+      <span class="ram-unit">GB</span>
+    </div>
+    <div class="ram-label">of 2.00 GB · <strong id="ramSaved">saved 812 MB</strong></div>
+    <div class="bar"><div class="bar-fill" id="ramBar" style="width: 71%"></div></div>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-num" id="frozenCount">23</div>
+        <div class="stat-lbl">Frozen</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="hiddenCount">14</div>
+        <div class="stat-lbl">Hidden</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="blockedCount">8</div>
+        <div class="stat-lbl">Blocked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOOGLE LAYER -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Google Layer</div>
+      <div class="section-count" id="googleCount">6 services</div>
+    </div>
+    <div class="banner">
+      <span class="b-ico">❄</span>
+      <span>Google services are <strong>not removed</strong> — they are cut off from network and hidden from view. The system stays intact. The reach disappears.</span>
+    </div>
+    <div class="list">
+      <div class="item">
+        <div class="ico google">▶</div>
+        <div class="meta">
+          <div class="meta-name">Google Play Store</div>
+          <div class="meta-sub">com.android.vending</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="80"></div>
+      </div>
+      <div class="item">
+        <div class="ico google">◉</div>
+        <div class="meta">
+          <div class="meta-name">Google Play Services</div>
+          <div class="meta-sub">Restricted · No network</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="120"></div>
+      </div>
+      <div class="item">
+        <div class="ico google">◎</div>
+        <div class="meta">
+          <div class="meta-name">Google Accounts</div>
+          <div class="meta-sub">Add & modify blocked</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="40"></div>
+      </div>
+      <div class="item">
+        <div class="ico google">☁</div>
+        <div class="meta">
+          <div class="meta-name">Background Sync</div>
+          <div class="meta-sub">Fully disabled</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="60"></div>
+      </div>
+      <div class="item">
+        <div class="ico google">◈</div>
+        <div class="meta">
+          <div class="meta-name">Location Services</div>
+          <div class="meta-sub">GPS · Networks · No link</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="50"></div>
+      </div>
+      <div class="item">
+        <div class="ico google">◐</div>
+        <div class="meta">
+          <div class="meta-name">Ad Identifier</div>
+          <div class="meta-sub">Zeroed out</div>
+        </div>
+        <div class="toggle on" data-type="google" data-weight="30"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FREEZE SECTION -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Deep Freeze</div>
+      <div class="section-count" id="freezeCount">3 apps</div>
+    </div>
+    <div class="banner">
+      <span class="b-ico">🧊</span>
+      <span>A frozen app <strong>cannot run</strong>, cannot receive notifications, and releases its RAM. It wakes only when you open it. Tap the toggle to thaw.</span>
+    </div>
+    <div class="list" id="freezeList">
+      <div class="item">
+        <div class="ico user">f</div>
+        <div class="meta">
+          <div class="meta-name">Facebook</div>
+          <div class="meta-sub ice">releases 210 MB</div>
+        </div>
+        <div class="toggle danger on" data-type="freeze" data-weight="210"></div>
+      </div>
+      <div class="item">
+        <div class="ico user">ig</div>
+        <div class="meta">
+          <div class="meta-name">Instagram</div>
+          <div class="meta-sub ice">releases 165 MB</div>
+        </div>
+        <div class="toggle danger on" data-type="freeze" data-weight="165"></div>
+      </div>
+      <div class="item">
+        <div class="ico user">X</div>
+        <div class="meta">
+          <div class="meta-name">X (Twitter)</div>
+          <div class="meta-sub ice">releases 140 MB</div>
+        </div>
+        <div class="toggle danger on" data-type="freeze" data-weight="140"></div>
+      </div>
+    </div>
+    <div class="add-row">
+      <button class="btn primary" onclick="openPicker()">
+        <span>＋</span> Add Apps to Freeze
+      </button>
+    </div>
+    <div class="folder-tip">
+      <span class="f-ico">📁</span>
+      <span>Apps you freeze can still appear on the launcher. MC88 cannot hide them from your home screen. Move them into a single folder named <strong style="color:var(--ice)">Frozen</strong> and forget about it.</span>
+    </div>
+  </div>
+
+  <!-- RESTRICTIONS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Device Restrictions</div>
+      <div class="section-count">Device Owner</div>
+    </div>
+    <div class="list">
+      <div class="item">
+        <div class="ico system">◈</div>
+        <div class="meta">
+          <div class="meta-name">WiFi</div>
+          <div class="meta-sub">Activation blocked</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">◇</div>
+        <div class="meta">
+          <div class="meta-name">Bluetooth</div>
+          <div class="meta-sub">Activation blocked</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">◉</div>
+        <div class="meta">
+          <div class="meta-name">Mobile Data</div>
+          <div class="meta-sub">Usage denied</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">✈</div>
+        <div class="meta">
+          <div class="meta-name">Airplane Mode</div>
+          <div class="meta-sub">Locked</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">◐</div>
+        <div class="meta">
+          <div class="meta-name">Camera</div>
+          <div class="meta-sub">Trusted apps only</div>
+        </div>
+        <div class="toggle" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">▣</div>
+        <div class="meta">
+          <div class="meta-name">USB File Transfer</div>
+          <div class="meta-sub">Disabled</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">⚙</div>
+        <div class="meta">
+          <div class="meta-name">Factory Reset</div>
+          <div class="meta-sub">Blocked from Settings</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APK PATH -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">App Install Path</div>
+    </div>
+    <div class="list">
+      <div class="item">
+        <div class="ico system">▤</div>
+        <div class="meta">
+          <div class="meta-name">Manual APK Install</div>
+          <div class="meta-sub">From file manager only</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+      <div class="item">
+        <div class="ico system">⚿</div>
+        <div class="meta">
+          <div class="meta-name">Signature Verification</div>
+          <div class="meta-sub">Required before install</div>
+        </div>
+        <div class="toggle on" data-type="restrict" data-weight="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOVAL -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Removal</div>
+    </div>
+    <div class="banner danger">
+      <span class="b-ico">⚠</span>
+      <span><strong>Everything is reversible.</strong> Removing MC88 restores the device to exactly what it was. No partitions touched. No bootloader changed. No permanent trace.</span>
+    </div>
+    <button class="btn danger" onclick="removeMC88()">Remove MC88 Completely</button>
+  </div>
+
+  <div class="divider">MC88 · Phase 2</div>
+  <div class="footer">
+    Mohamed Cheikh · MC88
+    <div class="sig">❄ MC88 ❄</div>
+  </div>
+
+</div>
+
+<!-- APP PICKER MODAL -->
+<div class="modal-overlay" id="picker" onclick="closePicker(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Apps to Freeze</div>
+    <div class="modal-sub">Select any app installed on the device. MC88 will suspend it and release its memory. Nothing is deleted.</div>
+
+    <div class="pick-item" data-app="TikTok" data-weight="180" data-icon="tt" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">tt</div>
+      <div class="meta">
+        <div class="meta-name">TikTok</div>
+        <div class="meta-sub">releases ~180 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Chrome" data-weight="220" data-icon="◯" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">◯</div>
+      <div class="meta">
+        <div class="meta-name">Chrome</div>
+        <div class="meta-sub">releases ~220 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="YouTube" data-weight="240" data-icon="▶" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">▶</div>
+      <div class="meta">
+        <div class="meta-name">YouTube</div>
+        <div class="meta-sub">releases ~240 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Snapchat" data-weight="155" data-icon="👻" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">👻</div>
+      <div class="meta">
+        <div class="meta-name">Snapchat</div>
+        <div class="meta-sub">releases ~155 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Spotify" data-weight="190" data-icon="♫" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">♫</div>
+      <div class="meta">
+        <div class="meta-name">Spotify</div>
+        <div class="meta-sub">releases ~190 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Maps" data-weight="130" data-icon="◈" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">◈</div>
+      <div class="meta">
+        <div class="meta-name">Google Maps</div>
+        <div class="meta-sub">releases ~130 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Discord" data-weight="175" data-icon="◐" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">◐</div>
+      <div class="meta">
+        <div class="meta-name">Discord</div>
+        <div class="meta-sub">releases ~175 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Slack" data-weight="160" data-icon="#" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">#</div>
+      <div class="meta">
+        <div class="meta-name">Slack</div>
+        <div class="meta-sub">releases ~160 MB</div>
+      </div>
+    </div>
+
+    <div class="pick-item" data-app="Reddit" data-weight="145" data-icon="◎" onclick="togglePick(this)">
+      <div class="pick-check">✓</div>
+      <div class="ico user">◎</div>
+      <div class="meta">
+        <div class="meta-name">Reddit</div>
+        <div class="meta-sub">releases ~145 MB</div>
+      </div>
+    </div>
+
+    <div style="height: 16px"></div>
+    <button class="btn primary" onclick="confirmPick()">Freeze Selected</button>
+  </div>
+</div>
+
+<script>
+  /* ============================================
+     MC88 — Mohamed Cheikh
+     mohamed005cheikh@gmail.com
+     ============================================ */
+
+  const BASE_USED_MB = 480;
+  const TOTAL_RAM_MB = 2048;
+
+  // Toggle interaction on existing items
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => {
+      t.classList.toggle('on');
+      updateStats();
+    });
+  });
+
+  function updateStats() {
+    const googleSaved = [...document.querySelectorAll('[data-type="google"].on')]
+      .reduce((s, t) => s + (+t.dataset.weight || 0), 0);
+    const freezeSaved = [...document.querySelectorAll('[data-type="freeze"].on')]
+      .reduce((s, t) => s + (+t.dataset.weight || 0), 0);
+
+    const googleOn = document.querySelectorAll('[data-type="google"].on').length;
+    const freezeOn = document.querySelectorAll('[data-type="freeze"].on').length;
+    const restrictOn = document.querySelectorAll('[data-type="restrict"].on').length;
+
+    const savedMB = googleSaved + freezeSaved;
+    const freeMB = Math.min(1900, BASE_USED_MB + savedMB);
+    const freeGB = (freeMB / 1024).toFixed(2);
+
+    document.getElementById('ramNum').textContent = freeGB;
+    document.getElementById('ramBar').style.width = Math.min(95, (freeMB / TOTAL_RAM_MB) * 100) + '%';
+    document.getElementById('ramSaved').textContent = 'saved ' + savedMB + ' MB';
+    document.getElementById('frozenCount').textContent = freezeOn + 20;
+    document.getElementById('hiddenCount').textContent = googleOn + 8;
+    document.getElementById('blockedCount').textContent = restrictOn;
+    document.getElementById('freezeCount').textContent = freezeOn + ' apps';
+    document.getElementById('googleCount').textContent = googleOn + ' services';
+  }
+
+  function removeMC88() {
+    if (confirm('Remove MC88 completely?\n\nAll restrictions will be lifted, all apps thawed, and the device will return to its original state.')) {
+      document.querySelectorAll('.toggle').forEach(t => t.classList.remove('on'));
+      updateStats();
+      document.getElementById('ramNum').textContent = '0.48';
+      document.getElementById('ramBar').style.width = '23%';
+      document.getElementById('ramSaved').textContent = 'saved 0 MB';
+    }
+  }
+
+  // ---------- App Picker ----------
+  function openPicker() {
+    document.getElementById('picker').classList.add('show');
+  }
+  function closePicker(e) {
+    if (!e || e.target.id === 'picker') {
+      document.getElementById('picker').classList.remove('show');
+    }
+  }
+  function togglePick(el) {
+    el.classList.toggle('selected');
+  }
+
+  function confirmPick() {
+    const selected = document.querySelectorAll('.pick-item.selected');
+    const list = document.getElementById('freezeList');
+
+    selected.forEach(item => {
+      const app = item.dataset.app;
+      const weight = item.dataset.weight;
+      const icon = item.dataset.icon;
+
+      // Check if already in list
+      const exists = [...list.querySelectorAll('.meta-name')].some(m => m.textContent === app);
+      if (exists) return;
+
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `
+        <div class="ico user">${icon}</div>
+        <div class="meta">
+          <div class="meta-name">${app}</div>
+          <div class="meta-sub ice">releases ${weight} MB</div>
+        </div>
+        <div class="toggle danger on" data-type="freeze" data-weight="${weight}"></div>
+      `;
+      list.appendChild(row);
+
+      const t = row.querySelector('.toggle');
+      t.addEventListener('click', () => {
+        t.classList.toggle('on');
+        updateStats();
+      });
+
+      item.classList.remove('selected');
+    });
+
+    document.getElementById('picker').classList.remove('show');
+    updateStats();
+  }
+
+  // ---------- Nav ----------
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      n.classList.add('active');
+    });
+  });
+
+  updateStats();
+</script>
+
+</body>
+</html>
